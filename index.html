@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Peacock Hotel - Smart Room System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assest/css/golden.css">
+</head>
+<body class="login-page">
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Panel - Hotel Info -->
+        <div class="left-panel">
+            <div class="logo-container">
+                <div class="logo-icon animate-float">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <h1 class="hotel-name">Golden Peacock</h1>
+                <p class="hotel-tagline">Luxury Redefined</p>
+            </div>
+            
+            <div class="features-list">
+                <h3>Smart Room System Features</h3>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Remote Room Control</li>
+                    <li><i class="fas fa-check-circle"></i> Real-time Staff Communication</li>
+                    <li><i class="fas fa-check-circle"></i> Energy Consumption Monitoring</li>
+                    <li><i class="fas fa-check-circle"></i> Automated Service Requests</li>
+                    <li><i class="fas fa-check-circle"></i> Multi-language Support</li>
+                    <li><i class="fas fa-check-circle"></i> IoT Integration</li>
+                </ul>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <h4>160+</h4>
+                    <p>Smart Rooms</p>
+                </div>
+                <div class="stat-item">
+                    <h4>24/7</h4>
+                    <p>Support</p>
+                </div>
+                <div class="stat-item">
+                    <h4>99%</h4>
+                    <p>Guest Satisfaction</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Login Form -->
+        <div class="right-panel">
+            <div class="login-form">
+                <div class="form-header">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to your Smart Room Dashboard</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Username / Room Number
+                        </label>
+                        <input type="text" id="username" placeholder="Enter username or room number" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                        <button type="button" class="show-password" id="showPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-options">
+                        <label class="checkbox">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-password">Forgot Password?</a>
+                    </div>
+                    
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        <span>Sign In</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <div class="user-type-selector">
+                        <p>Sign in as:</p>
+                        <div class="user-types">
+                            <button type="button" class="user-type-btn active" data-type="guest">
+                                <i class="fas fa-user"></i>
+                                <span>Guest</span>
+                            </button>
+                            <button type="button" class="user-type-btn" data-type="staff">
+                                <i class="fas fa-concierge-bell"></i>
+                                <span>Staff</span>
+                            </button>
+                            <button type="button" class="user-type-btn" data-type="admin">
+                                <i class="fas fa-cogs"></i>
+                                <span>Admin</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <div class="social-login">
+                    <button class="social-btn">
+                        <i class="fab fa-google"></i>
+                        <span>Google</span>
+                    </button>
+                    <button class="social-btn">
+                        <i class="fab fa-facebook"></i>
+                        <span>Facebook</span>
+                    </button>
+                    <button class="social-btn">
+                        <i class="fas fa-key-card"></i>
+                        <span>Key Card</span>
+                    </button>
+                </div>
+                
+                <div class="help-section">
+                    <p>Need help? <a href="#">Contact Support</a> or call +265 991 123 456</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-logo">
+                    <i class="fas fa-crown"></i>
+                </div>
+            </div>
+            <p>Authenticating...</p>
+        </div>
+    </div>
+    
+    <script src="js/golden_script.js"></script>
+</body>
+</html>

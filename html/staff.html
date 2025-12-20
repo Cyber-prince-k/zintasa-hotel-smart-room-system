@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - Golden Peacock Hotel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assest/css/golden.css">
+</head>
+<body class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-small">
+                <div class="logo-icon-small">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div>
+                    <h2 class="hotel-name-small">Golden Peacock</h2>
+                    <p class="system-name">Staff Dashboard</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile -->
+        <div class="user-profile">
+            <div class="user-avatar">
+                JB
+                <span class="user-status"></span>
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">John Banda</h3>
+                <p class="user-role">Concierge • Floor Supervisor</p>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+            <a href="staff.html" class="nav-item active" id="dashboard-link">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="rooms-link">
+                <i class="fas fa-door-open"></i>
+                <span>Room Management</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="requests-link">
+                <i class="fas fa-concierge-bell"></i>
+                <span>Service Requests</span>
+                <span class="nav-badge">12</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="guests-link">
+                <i class="fas fa-users"></i>
+                <span>Guests</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="reports-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reports</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="schedule-link">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Schedule</span>
+            </a>
+            
+            <a href="#" class="nav-item" id="staff-tools-link">
+                <i class="fas fa-tools"></i>
+                <span>Staff Tools</span>
+            </a>
+
+            <a href="guest.html" class="nav-item" id="guest-dashboard-link">
+                <i class="fas fa-user"></i>
+                <span>Guest Dashboard</span>
+            </a>
+
+            <a href="admin.html" class="nav-item" id="admin-dashboard-link">
+                <i class="fas fa-cogs"></i>
+                <span>Admin Dashboard</span>
+            </a>
+
+            <a href="../index.html" class="nav-item" id="logout-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>© 2025 Golden Peacock Hotel</p>
+            <p>Logged in as Staff</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="page-title">
+                    <h1>Staff Dashboard</h1>
+                    <p>Monitor hotel operations and guest services</p>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <div class="search-box">
+                    <input type="text" placeholder="Search rooms, guests, requests...">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="action-btn" id="urgentAlertsBtn">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="notification-badge danger">3</span>
+                    </button>
+                    <button class="action-btn" id="reportsBtn">
+                        <i class="fas fa-file-export"></i>
+                    </button>
+                    <button class="action-btn" id="clockInBtn">
+                        <i class="fas fa-clock"></i>
+                    </button>
+                </div>
+
+                <div class="user-menu" id="userMenu">
+                    <div class="user-avatar-small">JB</div>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon danger">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">12</div>
+                        <div class="stat-label">Pending Requests</div>
+                        <div class="stat-change negative">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>2 new in last hour</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">142/160</div>
+                        <div class="stat-label">Rooms Occupied</div>
+                        <div class="stat-change">
+                            <i class="fas fa-chart-line"></i>
+                            <span>87% occupancy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">24</div>
+                        <div class="stat-label">Active Staff</div>
+                        <div class="stat-change">
+                            <i class="fas fa-user-check"></i>
+                            <span>4 on break</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value">18%</div>
+                        <div class="stat-label">Energy Saved</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>vs yesterday</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid grid-2">
+                <!-- Room Status Overview -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Room Status Overview</h3>
+                        <div class="card-actions">
+                            <select class="form-control form-control-sm">
+                                <option>All Floors</option>
+                                <option>Floor 1</option>
+                                <option>Floor 2</option>
+                                <option>Floor 3</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="room-status-grid">
+                            <div class="room-status-item occupied">
+                                <div class="room-status-header">
+                                    <span class="room-number">205</span>
+                                    <span class="room-status-badge">Occupied</span>
+                                </div>
+                                <div class="room-status-info">
+                                    <p>Prince Kamanga</p>
+                                    <small>Check-out: 28 Oct</small>
+                                </div>
+                                <button class="room-action-btn">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="room-status-item vacant">
+                                <div class="room-status-header">
+                                    <span class="room-number">208</span>
+                                    <span class="room-status-badge">Vacant</span>
+                                </div>
+                                <div class="room-status-info">
+                                    <p>Ready for check-in</p>
+                                    <small>Last cleaned: Today 10:30</small>
+                                </div>
+                                <button class="room-action-btn">
+                                    <i class="fas fa-bell"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="room-status-item cleaning">
+                                <div class="room-status-header">
+                                    <span class="room-number">212</span>
+                                    <span class="room-status-badge">Cleaning</span>
+                                </div>
+                                <div class="room-status-info">
+                                    <p>Housekeeping in progress</p>
+                                    <small>Started: 11:45 AM</small>
+                                </div>
+                                <button class="room-action-btn">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="room-status-item maintenance">
+                                <div class="room-status-header">
+                                    <span class="room-number">215</span>
+                                    <span class="room-status-badge">Maintenance</span>
+                                </div>
+                                <div class="room-status-info">
+                                    <p>AC repair in progress</p>
+                                    <small>Estimated: 2 hours</small>
+                                </div>
+                                <button class="room-action-btn">
+                                    <i class="fas fa-tools"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Service Requests -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Service Requests</h3>
+                        <button class="btn btn-primary btn-sm" id="assignAllBtn">
+                            <i class="fas fa-tasks"></i>
+                            <span>Assign All</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Room</th>
+                                        <th>Service</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>#HK2105</td>
+                                        <td>312</td>
+                                        <td>Housekeeping</td>
+                                        <td>11:30 AM</td>
+                                        <td>
+                                            <span class="status-badge warning">Pending</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-primary btn-sm assign-btn">
+                                                Assign
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>#MN2104</td>
+                                        <td>205</td>
+                                        <td>Maintenance</td>
+                                        <td>11:15 AM</td>
+                                        <td>
+                                            <span class="status-badge info">In Progress</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-sm">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>#RS2103</td>
+                                        <td>118</td>
+                                        <td>Room Service</td>
+                                        <td>10:45 AM</td>
+                                        <td>
+                                            <span class="status-badge success">Completed</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-sm">
+                                                Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>#HK2102</td>
+                                        <td>409</td>
+                                        <td>Housekeeping</td>
+                                        <td>10:20 AM</td>
+                                        <td>
+                                            <span class="status-badge warning">Pending</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-primary btn-sm assign-btn">
+                                                Assign
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Staff Activity</h3>
+                        <div class="card-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="staff-activity-list">
+                            <div class="activity-item">
+                                <div class="activity-avatar">
+                                    <span>SM</span>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Sarah M.</strong> completed room cleaning in 312</p>
+                                    <small>2 minutes ago</small>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-avatar">
+                                    <span>JB</span>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>John B.</strong> assigned maintenance to room 205</p>
+                                    <small>15 minutes ago</small>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-avatar">
+                                    <span>MK</span>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Mike K.</strong> started break</p>
+                                    <small>30 minutes ago</small>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-avatar">
+                                    <span>AL</span>
+                                </div>
+                                <div class="activity-content">
+                                    <p><strong>Anna L.</strong> responded to guest request in 118</p>
+                                    <small>45 minutes ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Energy Management -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Energy Management</h3>
+                        <div class="card-actions">
+                            <span class="text-success">
+                                <i class="fas fa-leaf"></i>
+                                <span>Eco Mode Active</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="energy-breakdown">
+                            <div class="breakdown-item">
+                                <div class="breakdown-label">
+                                    <div class="breakdown-color" style="background: #3B82F6;"></div>
+                                    <span>Lighting</span>
+                                </div>
+                                <div class="breakdown-value">35%</div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="breakdown-label">
+                                    <div class="breakdown-color" style="background: #10B981;"></div>
+                                    <span>HVAC</span>
+                                </div>
+                                <div class="breakdown-value">45%</div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="breakdown-label">
+                                    <div class="breakdown-color" style="background: #8B5CF6;"></div>
+                                    <span>Other</span>
+                                </div>
+                                <div class="breakdown-value">20%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="energy-savings mt-6">
+                            <h4>Total Savings Today</h4>
+                            <div class="savings-value">$245</div>
+                            <div class="savings-percentage">18% reduction</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guest Alerts -->
+            <div class="card mt-6">
+                <div class="card-header">
+                    <h3 class="card-title">Guest Alerts & Notifications</h3>
+                    <div class="card-actions">
+                        <button class="btn btn-warning btn-sm" id="acknowledgeAllBtn">
+                            <i class="fas fa-check-double"></i>
+                            <span>Acknowledge All</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alerts-grid">
+                        <div class="alert-item urgent">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>Room 312 - Emergency</h4>
+                                <p>Guest reporting water leak in bathroom</p>
+                                <small>Priority: High • 5 minutes ago</small>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-danger btn-sm">Take Action</button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-item warning">
+                            <div class="alert-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>Room 205 - Late Check-out</h4>
+                                <p>Guest requesting extended stay until 2 PM</p>
+                                <small>Priority: Medium • 30 minutes ago</small>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-warning btn-sm">Review</button>
+                            </div>
+                        </div>
+                        
+                        <div class="alert-item info">
+                            <div class="alert-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <h4>Room 118 - Special Request</h4>
+                                <p>Guest requesting extra pillows and blankets</p>
+                                <small>Priority: Low • 1 hour ago</small>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-primary btn-sm">Fulfill</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay">
+        <!-- Modal content will be inserted here -->
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="../js/golden_script.js"></script>
+</body>
+</html>
