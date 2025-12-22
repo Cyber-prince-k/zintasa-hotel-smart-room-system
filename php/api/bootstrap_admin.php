@@ -19,6 +19,7 @@ if ($setupToken === '' || !hash_equals($setupToken, $provided)) {
 
 $body = get_json_body();
 $fullName = trim((string)($body['full_name'] ?? ''));
+$username = trim((string)($body['username'] ?? ''));
 $email = trim((string)($body['email'] ?? ''));
 $password = (string)($body['password'] ?? '');
 
@@ -36,17 +37,18 @@ try {
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, email, password_hash) VALUES (\'admin\', :full_name, :email, :password_hash)');
+    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, password_hash) VALUES (\'admin\', :full_name, :username, :email, :password_hash)');
     $stmt->execute([
         ':full_name' => $fullName,
+        ':username' => $username !== '' ? $username : null,
         ':email' => $email,
         ':password_hash' => $hash,
     ]);
 
     $userId = (int)$pdo->lastInsertId();
-    set_session_user(['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'email' => $email]);
+    set_session_user(['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'username' => $username !== '' ? $username : null, 'email' => $email]);
 
-    json_response(['ok' => true, 'user' => ['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'email' => $email]]);
+    json_response(['ok' => true, 'user' => ['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'username' => $username !== '' ? $username : null, 'email' => $email]]);
 } catch (Throwable $e) {
     json_exception($e);
 }

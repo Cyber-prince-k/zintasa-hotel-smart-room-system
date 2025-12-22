@@ -15,6 +15,7 @@ $actor = require_role(['admin', 'staff']);
 $body = get_json_body();
 $role = strtolower(trim((string)($body['role'] ?? '')));
 $fullName = trim((string)($body['full_name'] ?? ''));
+$username = trim((string)($body['username'] ?? ''));
 $email = trim((string)($body['email'] ?? ''));
 
 $roomNumber = trim((string)($body['room_number'] ?? ''));
@@ -33,6 +34,13 @@ $pdo = db();
 // Role rules
 if ($role === 'admin' && ($actor['role'] ?? '') !== 'admin') {
     json_response(['ok' => false, 'error' => 'Only admin can create admin accounts'], 403);
+}
+
+if ($role === 'admin') {
+    $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='admin'")->fetchColumn();
+    if ($adminCount >= 3) {
+        json_response(['ok' => false, 'error' => 'Admin account limit reached (max 3)'], 403);
+    }
 }
 
 $generatedGuestCode = null;
@@ -56,10 +64,11 @@ if ($role === 'guest') {
 try {
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, email, room_number, key_card_id, password_hash, created_by) VALUES (:role, :full_name, :email, :room_number, :key_card_id, :password_hash, :created_by)');
+    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, room_number, key_card_id, password_hash, created_by) VALUES (:role, :full_name, :username, :email, :room_number, :key_card_id, :password_hash, :created_by)');
     $stmt->execute([
         ':role' => $role,
         ':full_name' => $fullName,
+        ':username' => $username !== '' ? $username : null,
         ':email' => $email,
         ':room_number' => $roomNumber !== '' ? $roomNumber : null,
         ':key_card_id' => $keyCardId !== '' ? $keyCardId : null,

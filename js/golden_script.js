@@ -14,21 +14,76 @@ class SmartRoomSystem {
         this.checkPageType();
     }
 
-    checkPageType() {
+    async checkPageType() {
         const path = window.location.pathname;
         const file = (path.split('/').pop() || '').toLowerCase();
 
-        if (file === 'guest.html') {
-            this.currentDashboard = 'guest';
-            this.setupGuestDashboard();
-        } else if (file === 'staff.html') {
-            this.currentDashboard = 'staff';
-            this.setupStaffDashboard();
-        } else if (file === 'admin.html') {
-            this.currentDashboard = 'admin';
-            this.setupAdminDashboard();
-        } else {
+        const createAccountForm = document.getElementById('createAccountForm');
+        if (file === 'create_account.html' || createAccountForm) {
+            this.setupCreateAccountPage();
+            return;
+        }
+
+        const isDashboard = (file === 'guest.html' || file === 'staff.html' || file === 'admin.html');
+        if (!isDashboard) {
             this.setupLoginPage();
+            return;
+        }
+
+        const expectedRole = file === 'admin.html' ? 'admin' : file === 'staff.html' ? 'staff' : 'guest';
+
+        try {
+            const res = await fetch(this.getApiPath('me.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json().catch(() => null);
+            const user = (res.ok && data && data.ok === true && data.user) ? data.user : null;
+
+            if (!user || !user.role) {
+                localStorage.removeItem('smartRoomUser');
+                this.currentUser = null;
+                this.showToast('Unauthorized. Please login again.', 'error');
+                setTimeout(() => {
+                    window.location.href = this.getPagePath('index');
+                }, 500);
+                return;
+            }
+
+            if (String(user.role).toLowerCase() !== expectedRole) {
+                this.showToast('Unauthorized for this dashboard. Please login with the correct user type.', 'error');
+                localStorage.removeItem('smartRoomUser');
+                this.currentUser = null;
+                setTimeout(() => {
+                    window.location.href = this.getPagePath('index');
+                }, 500);
+                return;
+            }
+
+            this.currentUser = this.normalizeUser(user);
+            try {
+                localStorage.setItem('smartRoomUser', JSON.stringify(this.currentUser));
+            } catch (_) {
+                // ignore
+            }
+
+            this.currentDashboard = expectedRole;
+            if (expectedRole === 'admin') {
+                this.setupAdminDashboard();
+            } else if (expectedRole === 'staff') {
+                this.setupStaffDashboard();
+            } else {
+                this.setupGuestDashboard();
+            }
+        } catch (_) {
+            this.currentUser = null;
+            localStorage.removeItem('smartRoomUser');
+            this.showToast('Unauthorized. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = this.getPagePath('index');
+            }, 500);
+            return;
         }
     }
 
@@ -37,12 +92,21 @@ class SmartRoomSystem {
         const segments = path.split('/').filter(Boolean);
         const inHtmlFolder = segments[segments.length - 2]?.toLowerCase() === 'html';
 
+        const v = '6';
+
         if (target === 'index') {
             return inHtmlFolder ? '../index.html' : 'index.html';
         }
 
         // guest/staff/admin
-        return inHtmlFolder ? `${target}.html` : `html/${target}.html`;
+        return inHtmlFolder ? `${target}.html?v=${v}` : `html/${target}.html?v=${v}`;
+    }
+
+    getApiPath(endpoint) {
+        const path = window.location.pathname;
+        const segments = path.split('/').filter(Boolean);
+        const inHtmlFolder = segments[segments.length - 2]?.toLowerCase() === 'html';
+        return inHtmlFolder ? `../php/api/${endpoint}` : `php/api/${endpoint}`;
     }
 
     setupEventListeners() {
@@ -50,6 +114,14 @@ class SmartRoomSystem {
         const menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
             menuToggle.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        const logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.logout();
+            });
         }
 
         // User menu
@@ -120,10 +192,10 @@ class SmartRoomSystem {
         const menuHtml = `
             <div class="user-dropdown">
                 <div class="dropdown-header">
-                    <div class="user-avatar-small">${this.currentUser?.initials || 'GU'}</div>
+                    <div class="user-avatar-small">${this.getUserInitials(this.currentUser) || 'GU'}</div>
                     <div>
-                        <h4>${this.currentUser?.name || 'Guest User'}</h4>
-                        <p>${this.currentUser?.role || 'Guest'}</p>
+                        <h4>${this.getUserFullName(this.currentUser) || 'Guest User'}</h4>
+                        <p>${this.getUserRoleLabel(this.currentUser) || 'Guest'}</p>
                     </div>
                 </div>
                 <div class="dropdown-divider"></div>
@@ -347,11 +419,18 @@ class SmartRoomSystem {
             // Clear user data
             localStorage.removeItem('smartRoomUser');
             this.currentUser = null;
-            
-            // Simulate logout process
-            setTimeout(() => {
-                window.location.href = this.getPagePath('index');
-            }, 1000);
+
+            // Clear server session (best-effort)
+            fetch(this.getApiPath('logout.php'), {
+                method: 'POST',
+                credentials: 'include'
+            }).catch(() => {
+                // ignore
+            }).finally(() => {
+                setTimeout(() => {
+                    window.location.href = this.getPagePath('index');
+                }, 500);
+            });
         }
     }
 
@@ -394,12 +473,41 @@ class SmartRoomSystem {
         }
     }
 
-    setupGuestDashboard() {
-        this.currentUser = {
-            name: 'Prince Kamanga',
-            role: 'Guest • Room 205',
-            initials: 'PK'
+    setupCreateAccountPage() {
+        const form = document.getElementById('createAccountForm');
+        const createBtn = document.getElementById('createAccountBtn');
+
+        const showNewPasswordBtn = document.getElementById('showNewPassword');
+        const showConfirmPasswordBtn = document.getElementById('showConfirmPassword');
+
+        const togglePassword = (inputId, btn) => {
+            const input = document.getElementById(inputId);
+            if (!input || !btn) return;
+
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            btn.innerHTML = type === 'password' ?
+                '<i class="fas fa-eye"></i>' :
+                '<i class="fas fa-eye-slash"></i>';
         };
+
+        if (showNewPasswordBtn) {
+            showNewPasswordBtn.addEventListener('click', () => togglePassword('newPassword', showNewPasswordBtn));
+        }
+        if (showConfirmPasswordBtn) {
+            showConfirmPasswordBtn.addEventListener('click', () => togglePassword('confirmPassword', showConfirmPasswordBtn));
+        }
+
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleCreateAccount();
+            });
+        }
+    }
+
+    setupGuestDashboard() {
+        this.renderCurrentUser();
 
         // Temperature control
         const tempSlider = document.getElementById('tempSlider');
@@ -459,11 +567,7 @@ class SmartRoomSystem {
     }
 
     setupStaffDashboard() {
-        this.currentUser = {
-            name: 'John Banda',
-            role: 'Concierge • Floor Supervisor',
-            initials: 'JB'
-        };
+        this.renderCurrentUser();
 
         // Assign buttons
         document.querySelectorAll('.assign-btn').forEach(btn => {
@@ -495,11 +599,7 @@ class SmartRoomSystem {
     }
 
     setupAdminDashboard() {
-        this.currentUser = {
-            name: 'System Administrator',
-            role: 'Admin • Full Access',
-            initials: 'AD'
-        };
+        this.renderCurrentUser();
 
         // Add user button
         const addUserBtn = document.getElementById('addUserBtn');
@@ -600,7 +700,7 @@ class SmartRoomSystem {
         }
     }
 
-    handleLogin() {
+    async handleLogin() {
         const username = document.getElementById('username')?.value;
         const password = document.getElementById('password')?.value;
         const rememberMe = document.getElementById('rememberMe')?.checked;
@@ -617,35 +717,133 @@ class SmartRoomSystem {
             loadingOverlay.style.display = 'flex';
         }
 
-        // Simulate API call
-        setTimeout(() => {
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('active');
+        try {
+            const res = await fetch(this.getApiPath('login.php'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: String(username).trim(),
+                    password: String(password),
+                    role: String(userType).trim().toLowerCase()
+                })
+            });
+
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || data.ok !== true) {
+                const msg = (data && data.error) ? data.error : 'Login failed';
+                throw new Error(msg);
             }
-            
-            // For demo purposes, always succeed
+
+            const user = data.user;
+            if (!user || !user.role) {
+                throw new Error('Login failed');
+            }
+
+            try {
+                localStorage.setItem('smartRoomUser', JSON.stringify(user));
+            } catch (_) {
+                // ignore
+            }
+            this.currentUser = user;
+
             this.showToast('Login successful!', 'success');
 
-            // Redirect based on user type
-            const activeType = document.querySelector('.user-type-btn.active');
-            const userType = activeType ? activeType.dataset.type : 'guest';
-            
             setTimeout(() => {
-                switch(userType) {
-                    case 'guest':
-                        window.location.href = this.getPagePath('guest');
+                switch (user.role) {
+                    case 'admin':
+                        window.location.href = this.getPagePath('admin');
                         break;
                     case 'staff':
                         window.location.href = this.getPagePath('staff');
                         break;
-                    case 'admin':
-                        window.location.href = this.getPagePath('admin');
+                    case 'guest':
+                        window.location.href = this.getPagePath('guest');
                         break;
                     default:
-                        window.location.href = this.getPagePath('guest');
+                        window.location.href = this.getPagePath('index');
                 }
-            }, 1000);
-        }, 2000);
+            }, 700);
+        } catch (err) {
+            this.showToast(err?.message || 'Login failed', 'error');
+        } finally {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+    }
+
+    async handleCreateAccount() {
+        const fullName = document.getElementById('fullName')?.value;
+        const username = document.getElementById('newUsername')?.value;
+        const email = document.getElementById('email')?.value;
+        const password = document.getElementById('newPassword')?.value;
+        const confirmPassword = document.getElementById('confirmPassword')?.value;
+        const role = document.getElementById('userType')?.value;
+
+        if (!fullName || !username || !email || !password || !confirmPassword || !role) {
+            this.showToast('Please fill in all fields', 'error');
+            return;
+        }
+
+        if (String(password) !== String(confirmPassword)) {
+            this.showToast('Passwords do not match', 'error');
+            return;
+        }
+
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        try {
+            const res = await fetch(this.getApiPath('self_register.php'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    full_name: String(fullName).trim(),
+                    username: String(username).trim(),
+                    email: String(email).trim(),
+                    password: String(password),
+                    role: String(role).trim().toLowerCase(),
+                })
+            });
+
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || data.ok !== true || !data.user) {
+                const msg = (data && data.error) ? data.error : 'Failed to create account';
+                throw new Error(msg);
+            }
+
+            const user = data.user;
+            this.showToast('Account created successfully', 'success');
+
+            try {
+                localStorage.removeItem('smartRoomUser');
+            } catch (_) {
+                // ignore
+            }
+
+            fetch(this.getApiPath('logout.php'), {
+                method: 'POST',
+                credentials: 'include'
+            }).catch(() => {
+                // ignore
+            });
+
+            window.location.replace(this.getPagePath('index'));
+        } catch (err) {
+            this.showToast(err?.message || 'Failed to create account', 'error');
+        } finally {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+        }
     }
 
     createServiceRequest() {
@@ -802,38 +1000,33 @@ class SmartRoomSystem {
                     <form id="addUserForm">
                         <div class="form-group">
                             <label class="form-label">Full Name</label>
-                            <input type="text" class="form-control" required>
+                            <input type="text" class="form-control" id="newUserFullName" required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Email Address</label>
-                            <input type="email" class="form-control" required>
+                            <input type="email" class="form-control" id="newUserEmail" required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Role</label>
-                            <select class="form-control" required>
+                            <select class="form-control" id="newUserRole" required>
                                 <option value="">Select role</option>
                                 <option value="admin">Administrator</option>
-                                <option value="staff-manager">Staff Manager</option>
                                 <option value="staff">Staff</option>
                                 <option value="guest">Guest</option>
                             </select>
                         </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Access Level</label>
-                            <select class="form-control" required>
-                                <option value="full">Full Access</option>
-                                <option value="limited">Limited Access</option>
-                                <option value="read-only">Read Only</option>
-                            </select>
+
+                        <div class="form-group" id="guestRoomGroup" style="display:none;">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="newUserRoomNumber" placeholder="e.g. 205">
+                            <small class="form-text">Guest will receive a generated login code via email.</small>
                         </div>
                         
-                        <div class="form-group">
-                            <label class="form-label">Initial Password</label>
-                            <input type="password" class="form-control" value="ChangeMe123!" readonly>
-                            <small class="form-text">User will be prompted to change password on first login</small>
+                        <div class="form-group" id="staffAdminPasswordGroup" style="display:none;">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="newUserPassword" placeholder="Enter password">
                         </div>
                     </form>
                 </div>
@@ -847,12 +1040,95 @@ class SmartRoomSystem {
         this.showModal(modalHtml);
 
         setTimeout(() => {
-            document.getElementById('cancelAddUser').addEventListener('click', () => this.closeModal());
-            document.getElementById('createUser').addEventListener('click', () => {
-                this.showToast('User created successfully', 'success');
-                this.closeModal();
-            });
-            document.querySelector('.modal-close').addEventListener('click', () => this.closeModal());
+            const cancelBtn = document.getElementById('cancelAddUser');
+            const createBtn = document.getElementById('createUser');
+            const roleSelect = document.getElementById('newUserRole');
+            const guestRoomGroup = document.getElementById('guestRoomGroup');
+            const staffAdminPasswordGroup = document.getElementById('staffAdminPasswordGroup');
+
+            const syncRoleFields = () => {
+                const role = String(roleSelect?.value || '').toLowerCase();
+                if (role === 'guest') {
+                    guestRoomGroup.style.display = '';
+                    staffAdminPasswordGroup.style.display = 'none';
+                } else if (role === 'admin' || role === 'staff') {
+                    guestRoomGroup.style.display = 'none';
+                    staffAdminPasswordGroup.style.display = '';
+                } else {
+                    guestRoomGroup.style.display = 'none';
+                    staffAdminPasswordGroup.style.display = 'none';
+                }
+            };
+
+            if (roleSelect) {
+                roleSelect.addEventListener('change', syncRoleFields);
+                syncRoleFields();
+            }
+
+            if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeModal());
+            const closeBtn = document.querySelector('.modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.closeModal());
+
+            if (createBtn) {
+                createBtn.addEventListener('click', async () => {
+                    const fullName = document.getElementById('newUserFullName')?.value;
+                    const email = document.getElementById('newUserEmail')?.value;
+                    const role = document.getElementById('newUserRole')?.value;
+                    const roomNumber = document.getElementById('newUserRoomNumber')?.value;
+                    const password = document.getElementById('newUserPassword')?.value;
+
+                    if (!fullName || !email || !role) {
+                        this.showToast('Please fill in full name, email, and role', 'error');
+                        return;
+                    }
+
+                    const payload = {
+                        full_name: String(fullName).trim(),
+                        email: String(email).trim(),
+                        role: String(role).trim().toLowerCase()
+                    };
+
+                    if (payload.role === 'guest') {
+                        if (!roomNumber) {
+                            this.showToast('Room number is required for guest', 'error');
+                            return;
+                        }
+                        payload.room_number = String(roomNumber).trim();
+                    } else {
+                        if (!password) {
+                            this.showToast('Password is required for staff/admin', 'error');
+                            return;
+                        }
+                        payload.password = String(password);
+                    }
+
+                    try {
+                        const res = await fetch(this.getApiPath('register.php'), {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await res.json().catch(() => null);
+                        if (!res.ok || !data || data.ok !== true) {
+                            const msg = (data && data.error) ? data.error : 'Failed to create user';
+                            throw new Error(msg);
+                        }
+
+                        if (data.warning) {
+                            this.showToast(data.warning, 'warning');
+                        } else {
+                            this.showToast('User created successfully', 'success');
+                        }
+                        this.closeModal();
+                    } catch (err) {
+                        this.showToast(err?.message || 'Failed to create user', 'error');
+                    }
+                });
+            }
         }, 100);
     }
 
@@ -974,19 +1250,100 @@ class SmartRoomSystem {
     loadUserData() {
         // In a real app, this would load from localStorage or API
         try {
-            const savedUser = localStorage.getItem('currentUser');
+            const savedUser = localStorage.getItem('smartRoomUser');
             if (savedUser) {
-                this.currentUser = JSON.parse(savedUser);
+                this.currentUser = this.normalizeUser(JSON.parse(savedUser));
             }
         } catch (err) {
             console.error('Failed to load user data:', err);
             try {
-                localStorage.removeItem('currentUser');
+                localStorage.removeItem('smartRoomUser');
             } catch (_) {
                 // ignore
             }
             this.currentUser = null;
         }
+    }
+
+    normalizeUser(user) {
+        if (!user || typeof user !== 'object') return null;
+
+        const fullName = this.getUserFullName(user);
+        const initials = this.getUserInitials(user);
+        const roleLabel = this.getUserRoleLabel(user);
+
+        return {
+            ...user,
+            name: fullName,
+            initials,
+            role_label: roleLabel,
+        };
+    }
+
+    getUserFullName(user) {
+        const fullName = (user && typeof user === 'object') ? (user.full_name ?? user.name) : null;
+        const s = String(fullName ?? '').trim();
+        return s !== '' ? s : null;
+    }
+
+    getUserInitials(user) {
+        const fullName = this.getUserFullName(user);
+        if (!fullName) return null;
+
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        const first = parts[0]?.[0] ?? '';
+        const second = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+        const initials = (first + second).toUpperCase();
+        return initials !== '' ? initials : null;
+    }
+
+    getUserRoleLabel(user) {
+        if (!user || typeof user !== 'object') return null;
+        const role = String(user.role ?? '').toLowerCase();
+        if (!role) return null;
+
+        if (role === 'guest') {
+            const room = String(user.room_number ?? '').trim();
+            return room ? `Guest • Room ${room}` : 'Guest';
+        }
+
+        if (role === 'admin') return 'Admin';
+        if (role === 'staff') return 'Staff';
+        return role;
+    }
+
+    renderCurrentUser() {
+        if (this.currentUser) {
+            this.currentUser = this.normalizeUser(this.currentUser);
+        }
+
+        const name = this.getUserFullName(this.currentUser) || '';
+        const initials = this.getUserInitials(this.currentUser) || '';
+        const roleLabel = this.getUserRoleLabel(this.currentUser) || '';
+
+        const sidebarName = document.querySelector('.user-profile .user-name');
+        if (sidebarName) sidebarName.textContent = name;
+
+        const sidebarRole = document.querySelector('.user-profile .user-role');
+        if (sidebarRole && roleLabel) sidebarRole.textContent = roleLabel;
+
+        const sidebarAvatar = document.querySelector('.user-profile .user-avatar');
+        if (sidebarAvatar && initials) {
+            let updated = false;
+            for (const node of Array.from(sidebarAvatar.childNodes)) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    node.nodeValue = `\n                ${initials}\n                `;
+                    updated = true;
+                    break;
+                }
+            }
+            if (!updated) {
+                sidebarAvatar.insertBefore(document.createTextNode(`\n                ${initials}\n                `), sidebarAvatar.firstChild);
+            }
+        }
+
+        const topAvatar = document.querySelector('#userMenu .user-avatar-small');
+        if (topAvatar && initials) topAvatar.textContent = initials;
     }
 
     setupAnimations() {

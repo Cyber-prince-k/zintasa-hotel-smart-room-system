@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Peacock Hotel - Create Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assest/css/golden.css">
+</head>
+<body class="login-page">
+    <div class="animated-bg"></div>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="logo-container">
+                <div class="logo-icon animate-float">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <h1 class="hotel-name">Golden Peacock</h1>
+                <p class="hotel-tagline">Luxury Redefined</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <h4>160+</h4>
+                    <p>Smart Rooms</p>
+                </div>
+                <div class="stat-item">
+                    <h4>24/7</h4>
+                    <p>Support</p>
+                </div>
+                <div class="stat-item">
+                    <h4>99%</h4>
+                    <p>Guest Satisfaction</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="login-form">
+                <div class="form-header">
+                    <h2>Create Account</h2>
+                    <p>Create your Staff/Admin Smart Room account</p>
+                </div>
+
+                <form id="createAccountForm">
+                    <div class="form-group">
+                        <label for="fullName">
+                            <i class="fas fa-id-card"></i> Full Name
+                        </label>
+                        <input type="text" id="fullName" placeholder="Enter your full name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newUsername">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" id="newUsername" placeholder="Choose a username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" id="email" placeholder="Enter your email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newPassword">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" id="newPassword" placeholder="Enter your password" required>
+                        <button type="button" class="show-password" id="showNewPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                        <button type="button" class="show-password" id="showConfirmPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userType">
+                            <i class="fas fa-user-shield"></i> User Type
+                        </label>
+                        <select id="userType" required>
+                            <option value="">Select user type</option>
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="createAccountBtn">
+                        <span>Create Account</span>
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+
+                    <div class="help-section" style="margin-top:16px;">
+                        <p>Already have an account? <a href="index.html">Sign In</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-logo">
+                    <i class="fas fa-crown"></i>
+                </div>
+            </div>
+            <p>Creating account...</p>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/golden_script.js?v=6"></script>
+</body>
+</html>
