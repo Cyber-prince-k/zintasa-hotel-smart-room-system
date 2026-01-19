@@ -100,20 +100,24 @@ if ($method === 'POST') {
         }
         
         $userId = (int)$user['id'];
-        $role = $user['role'];
+        $role = strtolower($user['role'] ?? '');
         $isFromGuest = ($role === 'guest') ? 1 : 0;
         
         // Get room number
         $roomNumber = $targetRoom;
         if ($role === 'guest') {
-            $stmt = $pdo->prepare("SELECT room_number FROM guests WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $guest = $stmt->fetch(PDO::FETCH_ASSOC);
-            $roomNumber = $guest['room_number'] ?? null;
+            // First try session, then query guests table
+            $roomNumber = $user['room_number'] ?? null;
+            if (!$roomNumber) {
+                $stmt = $pdo->prepare("SELECT room_number FROM guests WHERE user_id = ?");
+                $stmt->execute([$userId]);
+                $guest = $stmt->fetch(PDO::FETCH_ASSOC);
+                $roomNumber = $guest['room_number'] ?? null;
+            }
             
             if (!$roomNumber) {
                 http_response_code(400);
-                echo json_encode(['ok' => false, 'error' => 'No room assigned']);
+                echo json_encode(['ok' => false, 'error' => 'No room assigned to your account']);
                 exit;
             }
         }
