@@ -22,11 +22,29 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     $from = getenv('SMTP_FROM') ?: $user;
     $fromName = getenv('SMTP_FROM_NAME') ?: 'Golden Peacock Hotel';
 
-    if ($user === '' || $pass === '') {
-        throw new RuntimeException('SMTP_USER/SMTP_PASS not configured');
+    $missing = [];
+    if ($user === false || $user === '') {
+        $missing[] = 'SMTP_USER';
+    }
+    if ($pass === false || $pass === '') {
+        $missing[] = 'SMTP_PASS';
+    }
+    if ($from === false || $from === '') {
+        $missing[] = 'SMTP_FROM';
+    }
+    if (!empty($missing)) {
+        throw new RuntimeException('SMTP not configured. Missing: ' . implode(', ', $missing));
     }
 
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+
+    $debug = getenv('SMTP_DEBUG') ?: '';
+    if ($debug === '1') {
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = static function (string $str, int $level): void {
+            error_log('SMTP[' . $level . ']: ' . $str);
+        };
+    }
 
     $mail->isSMTP();
     $mail->Host = $host;

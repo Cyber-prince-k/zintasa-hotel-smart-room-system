@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(120) NOT NULL,
   `username` VARCHAR(80) NULL,
   `email` VARCHAR(190) NOT NULL,
+  `phone_number` VARCHAR(30) NULL,
   `room_number` VARCHAR(20) NULL,
   `key_card_id` VARCHAR(64) NULL,
   `password_hash` VARCHAR(255) NOT NULL,
