@@ -204,16 +204,124 @@ try {
 // Email guest code (after DB commit)
 if ($role === 'guest' && $generatedGuestCode !== null) {
     try {
-        $subject = 'Your Golden Peacock Smart Room Access Code';
+        $subject = 'Welcome to Golden Peacock Hotel - Your Room Access Details';
         $safeRoom = htmlspecialchars($roomNumber, ENT_QUOTES, 'UTF-8');
         $safeCode = htmlspecialchars($generatedGuestCode, ENT_QUOTES, 'UTF-8');
         $safeName = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
+        $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $currentYear = date('Y');
 
-        $html = "<p>Hello {$safeName},</p>\n" .
-                "<p>Welcome to Golden Peacock Hotel.</p>\n" .
-                "<p>Your room number: <strong>{$safeRoom}</strong></p>\n" .
-                "<p>Your login code (password): <strong>{$safeCode}</strong></p>\n" .
-                "<p>Please keep this code private.</p>";
+        $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%); padding: 40px 30px; text-align: center;">
+                            <div style="font-size: 36px; margin-bottom: 10px;">👑</div>
+                            <h1 style="color: #d4af37; margin: 0; font-size: 28px; font-weight: 600;">Golden Peacock Hotel</h1>
+                            <p style="color: #a8c5b5; margin: 8px 0 0 0; font-size: 14px; letter-spacing: 2px;">LUXURY & COMFORT</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Welcome Message -->
+                    <tr>
+                        <td style="padding: 40px 30px 20px 30px;">
+                            <h2 style="color: #1a472a; margin: 0 0 15px 0; font-size: 24px;">Welcome, {$safeName}!</h2>
+                            <p style="color: #555555; font-size: 16px; line-height: 1.6; margin: 0;">
+                                We are delighted to have you as our guest. Your smart room has been prepared and is ready for your arrival. Below are your access credentials.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Access Details Card -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; border-left: 4px solid #d4af37;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <h3 style="color: #1a472a; margin: 0 0 20px 0; font-size: 18px;">🔐 Your Access Details</h3>
+                                        
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td style="padding: 12px 0; border-bottom: 1px solid #dee2e6;">
+                                                    <span style="color: #6c757d; font-size: 14px;">Room Number</span><br>
+                                                    <span style="color: #1a472a; font-size: 24px; font-weight: 700;">{$safeRoom}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 0; border-bottom: 1px solid #dee2e6;">
+                                                    <span style="color: #6c757d; font-size: 14px;">Access Code (Password)</span><br>
+                                                    <span style="color: #d4af37; font-size: 24px; font-weight: 700; letter-spacing: 3px;">{$safeCode}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 12px 0;">
+                                                    <span style="color: #6c757d; font-size: 14px;">Login Email</span><br>
+                                                    <span style="color: #1a472a; font-size: 16px;">{$safeEmail}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Instructions -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <h3 style="color: #1a472a; margin: 0 0 15px 0; font-size: 16px;">📱 How to Access Your Smart Room</h3>
+                            <ol style="color: #555555; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                                <li>Visit our guest portal or scan the QR code at your room door</li>
+                                <li>Enter your room number or email address</li>
+                                <li>Use your access code as your password</li>
+                                <li>Control your room's lighting, temperature, and request services</li>
+                            </ol>
+                        </td>
+                    </tr>
+                    
+                    <!-- Security Notice -->
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                                <tr>
+                                    <td style="padding: 15px;">
+                                        <p style="color: #856404; font-size: 13px; margin: 0;">
+                                            <strong>🔒 Security Notice:</strong> Please keep your access code confidential. Do not share it with anyone. If you suspect unauthorized access, contact our front desk immediately.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #1a472a; padding: 30px; text-align: center;">
+                            <p style="color: #a8c5b5; font-size: 14px; margin: 0 0 10px 0;">Need assistance? We're here 24/7</p>
+                            <p style="color: #d4af37; font-size: 16px; margin: 0 0 20px 0;">📞 +265 996 850 711</p>
+                            <p style="color: #6c8f7a; font-size: 12px; margin: 0;">
+                                © {$currentYear} Golden Peacock Hotel. All rights reserved.<br>
+                                This is an automated message. Please do not reply directly to this email.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML;
 
         send_email($email, $fullName, $subject, $html);
     } catch (Throwable $e) {
