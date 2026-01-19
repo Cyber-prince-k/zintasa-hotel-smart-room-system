@@ -12,28 +12,6 @@ require_method('POST');
 
 $actor = require_role(['admin', 'staff']);
 
-function users_columns(PDO $pdo): array {
-    static $cached = null;
-    if (is_array($cached)) {
-        return $cached;
-    }
-    try {
-        $rows = $pdo->query('SHOW COLUMNS FROM users')->fetchAll();
-        $set = [];
-        foreach ($rows as $r) {
-            $field = $r['Field'] ?? null;
-            if (is_string($field) && $field !== '') {
-                $set[$field] = true;
-            }
-        }
-        $cached = $set;
-        return $set;
-    } catch (Throwable $e) {
-        $cached = [];
-        return $cached;
-    }
-}
-
 $body = get_json_body();
 $role = strtolower(trim((string)($body['role'] ?? '')));
 $fullName = trim((string)($body['full_name'] ?? ''));
@@ -42,8 +20,17 @@ $email = trim((string)($body['email'] ?? ''));
 
 $phoneNumber = trim((string)($body['phone_number'] ?? ''));
 
+// Guest-specific fields
 $roomNumber = trim((string)($body['room_number'] ?? ''));
 $keyCardId = trim((string)($body['key_card_id'] ?? ''));
+
+// Staff-specific fields
+$department = trim((string)($body['department'] ?? 'front_desk'));
+$employeeId = trim((string)($body['employee_id'] ?? ''));
+
+// Admin-specific fields
+$accessLevel = trim((string)($body['access_level'] ?? 'admin'));
+
 $password = (string)($body['password'] ?? '');
 
 if (!in_array($role, ['admin', 'staff', 'guest'], true)) {
@@ -54,8 +41,6 @@ if ($fullName === '' || $email === '') {
 }
 
 $pdo = db();
-
-$colSet = users_columns($pdo);
 
 // Role rules
 if ($role === 'admin' && ($actor['role'] ?? '') !== 'admin') {
@@ -74,12 +59,8 @@ $generatedGuestCode = null;
 if ($role === 'guest') {
     // Auto-assign room if not provided
     if ($roomNumber === '') {
-        $occSql = "SELECT room_number FROM users WHERE role='guest'";
-        if (isset($colSet['active'])) {
-            $occSql .= ' AND active=1';
-        }
-        $occSql .= ' AND room_number IS NOT NULL';
-        $occupied = $pdo->query($occSql)->fetchAll(PDO::FETCH_COLUMN);
+        // Get occupied rooms from guests table
+        $occupied = $pdo->query("SELECT room_number FROM guests WHERE room_number IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
         $occupiedSet = [];
         foreach ($occupied as $r) {
             $k = trim((string)$r);
@@ -124,52 +105,53 @@ if ($role === 'guest') {
 try {
     $pdo->beginTransaction();
 
-    $colSet = users_columns($pdo);
+    // Get creator ID
+    $creatorId = (int)($actor['id'] ?? 0);
+    if ($creatorId > 0) {
+        $chk = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+        $chk->execute([':id' => $creatorId]);
+        if (!$chk->fetch()) {
+            $creatorId = 0;
+        }
+    }
 
-    $columns = ['role', 'full_name', 'username', 'email', 'password_hash'];
-    $params = [
+    // Insert into base users table
+    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, phone_number, password_hash, created_by) VALUES (:role, :full_name, :username, :email, :phone_number, :password_hash, :created_by)');
+    $stmt->execute([
         ':role' => $role,
         ':full_name' => $fullName,
         ':username' => $username !== '' ? $username : null,
         ':email' => $email,
+        ':phone_number' => $phoneNumber !== '' ? $phoneNumber : null,
         ':password_hash' => $passwordHash,
-    ];
-
-    if (isset($colSet['phone_number'])) {
-        $columns[] = 'phone_number';
-        $params[':phone_number'] = $phoneNumber !== '' ? $phoneNumber : null;
-    }
-    if (isset($colSet['room_number'])) {
-        $columns[] = 'room_number';
-        $params[':room_number'] = $roomNumber !== '' ? $roomNumber : null;
-    }
-    if (isset($colSet['key_card_id'])) {
-        $columns[] = 'key_card_id';
-        $params[':key_card_id'] = $keyCardId !== '' ? $keyCardId : null;
-    }
-
-    if (isset($colSet['created_by'])) {
-        $creatorId = (int)($actor['id'] ?? 0);
-        if ($creatorId > 0) {
-            $chk = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
-            $chk->execute([':id' => $creatorId]);
-            if (!$chk->fetch()) {
-                $creatorId = 0;
-            }
-        }
-        $columns[] = 'created_by';
-        $params[':created_by'] = $creatorId > 0 ? $creatorId : null;
-    }
-
-    $placeholders = [];
-    foreach ($columns as $c) {
-        $placeholders[] = ':' . $c;
-    }
-    $sql = 'INSERT INTO users (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
+        ':created_by' => $creatorId > 0 ? $creatorId : null,
+    ]);
 
     $newUserId = (int)$pdo->lastInsertId();
+
+    // Insert into role-specific table
+    if ($role === 'guest') {
+        $stmt = $pdo->prepare('INSERT INTO guests (user_id, room_number, key_card_id, guest_code) VALUES (:user_id, :room_number, :key_card_id, :guest_code)');
+        $stmt->execute([
+            ':user_id' => $newUserId,
+            ':room_number' => $roomNumber !== '' ? $roomNumber : null,
+            ':key_card_id' => $keyCardId !== '' ? $keyCardId : null,
+            ':guest_code' => $generatedGuestCode,
+        ]);
+    } elseif ($role === 'staff') {
+        $stmt = $pdo->prepare('INSERT INTO staff (user_id, employee_id, department) VALUES (:user_id, :employee_id, :department)');
+        $stmt->execute([
+            ':user_id' => $newUserId,
+            ':employee_id' => $employeeId !== '' ? $employeeId : null,
+            ':department' => $department,
+        ]);
+    } elseif ($role === 'admin') {
+        $stmt = $pdo->prepare('INSERT INTO admins (user_id, access_level) VALUES (:user_id, :access_level)');
+        $stmt->execute([
+            ':user_id' => $newUserId,
+            ':access_level' => $accessLevel,
+        ]);
+    }
 
     $pdo->commit();
 } catch (Throwable $e) {

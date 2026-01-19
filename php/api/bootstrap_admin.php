@@ -37,6 +37,9 @@ try {
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
+    $pdo->beginTransaction();
+
+    // Insert into base users table
     $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, password_hash) VALUES (\'admin\', :full_name, :username, :email, :password_hash)');
     $stmt->execute([
         ':full_name' => $fullName,
@@ -46,9 +49,22 @@ try {
     ]);
 
     $userId = (int)$pdo->lastInsertId();
+
+    // Insert into admins table with super_admin access level for first admin
+    $stmt = $pdo->prepare('INSERT INTO admins (user_id, access_level) VALUES (:user_id, :access_level)');
+    $stmt->execute([
+        ':user_id' => $userId,
+        ':access_level' => 'super_admin',
+    ]);
+
+    $pdo->commit();
+
     set_session_user(['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'username' => $username !== '' ? $username : null, 'email' => $email]);
 
     json_response(['ok' => true, 'user' => ['id' => $userId, 'role' => 'admin', 'full_name' => $fullName, 'username' => $username !== '' ? $username : null, 'email' => $email]]);
 } catch (Throwable $e) {
+    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     json_exception($e);
 }

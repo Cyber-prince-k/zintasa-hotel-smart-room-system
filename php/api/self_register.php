@@ -39,6 +39,7 @@ try {
 
     $pdo->beginTransaction();
 
+    // Insert into base users table
     $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, password_hash, created_by) VALUES (:role, :full_name, :username, :email, :password_hash, NULL)');
     $stmt->execute([
         ':role' => $role,
@@ -49,6 +50,21 @@ try {
     ]);
 
     $newUserId = (int)$pdo->lastInsertId();
+
+    // Insert into role-specific table
+    if ($role === 'admin') {
+        $stmt = $pdo->prepare('INSERT INTO admins (user_id, access_level) VALUES (:user_id, :access_level)');
+        $stmt->execute([
+            ':user_id' => $newUserId,
+            ':access_level' => 'admin',
+        ]);
+    } elseif ($role === 'staff') {
+        $stmt = $pdo->prepare('INSERT INTO staff (user_id, department) VALUES (:user_id, :department)');
+        $stmt->execute([
+            ':user_id' => $newUserId,
+            ':department' => 'front_desk',
+        ]);
+    }
 
     $pdo->commit();
 
@@ -76,6 +92,9 @@ try {
     }
     if (stripos($msg, 'uniq_users_username') !== false) {
         json_response(['ok' => false, 'error' => 'Username already exists'], 409);
+    }
+    if (stripos($msg, 'uniq_users_email') !== false) {
+        json_response(['ok' => false, 'error' => 'Email already exists'], 409);
     }
 
     json_exception($e, 'Failed to create account', 400);

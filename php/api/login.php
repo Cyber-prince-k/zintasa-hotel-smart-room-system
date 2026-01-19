@@ -24,16 +24,19 @@ if ($requestedRole !== '' && !in_array($requestedRole, ['admin', 'staff', 'guest
 
 try {
     $pdo = db();
-    // Avoid ambiguous selection when emails are not unique.
-    // Prefer username > room_number > email.
     $user = null;
 
-    $stmt = $pdo->prepare('SELECT id, role, full_name, username, email, room_number, password_hash, active FROM users WHERE username = :login LIMIT 1');
+    // Query with LEFT JOIN to guests table for room_number
+    $baseSelect = 'SELECT u.id, u.role, u.full_name, u.username, u.email, u.password_hash, u.active, g.room_number FROM users u LEFT JOIN guests g ON u.id = g.user_id';
+
+    // Prefer username > room_number (from guests) > email
+    $stmt = $pdo->prepare($baseSelect . ' WHERE u.username = :login LIMIT 1');
     $stmt->execute([':login' => $login]);
     $user = $stmt->fetch();
 
     if (!$user) {
-        $stmt = $pdo->prepare('SELECT id, role, full_name, username, email, room_number, password_hash, active FROM users WHERE room_number = :login LIMIT 1');
+        // Check by room_number in guests table
+        $stmt = $pdo->prepare($baseSelect . ' WHERE g.room_number = :login LIMIT 1');
         $stmt->execute([':login' => $login]);
         $user = $stmt->fetch();
     }
@@ -47,7 +50,7 @@ try {
             json_response(['ok' => false, 'error' => 'Multiple accounts use this email. Please login with your username instead.'], 409);
         }
 
-        $stmt = $pdo->prepare('SELECT id, role, full_name, username, email, room_number, password_hash, active FROM users WHERE email = :login LIMIT 1');
+        $stmt = $pdo->prepare($baseSelect . ' WHERE u.email = :login LIMIT 1');
         $stmt->execute([':login' => $login]);
         $user = $stmt->fetch();
     }
@@ -70,7 +73,7 @@ try {
         'full_name' => $user['full_name'],
         'username' => $user['username'] ?? null,
         'email' => $user['email'],
-        'room_number' => $user['room_number'],
+        'room_number' => $user['room_number'] ?? null,
     ];
 
     set_session_user($sessionUser);
