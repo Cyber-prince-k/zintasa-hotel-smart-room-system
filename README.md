@@ -221,7 +221,31 @@ smart room/
 
 ### Schema (`php/schema.sql`)
 
-The system uses a single `users` table:
+The system uses an **inheritance-based design** where role-specific tables extend the base `users` table:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         users (base)                             │
+│  id, role, full_name, username, email, phone_number,            │
+│  password_hash, created_by, created_at, updated_at, active      │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+         ▼                 ▼                 ▼
+┌─────────────┐   ┌─────────────┐   ┌─────────────────┐
+│   guests    │   │    staff    │   │     admins      │
+│  user_id ──►│   │  user_id ──►│   │   user_id ──►   │
+│  room_number│   │  employee_id│   │   access_level  │
+│  key_card_id│   │  department │   │   permissions   │
+│  check_in   │   │  shift      │   │   last_login_at │
+│  check_out  │   │  supervisor │   └─────────────────┘
+│  vip_status │   └─────────────┘
+└─────────────┘
+```
+
+### Base Users Table
+Common fields shared by all user types:
 
 ```sql
 CREATE TABLE users (
@@ -229,25 +253,74 @@ CREATE TABLE users (
   role            ENUM('admin','staff','guest') NOT NULL,
   full_name       VARCHAR(120) NOT NULL,
   username        VARCHAR(80) NULL UNIQUE,
-  email           VARCHAR(190) NOT NULL,
+  email           VARCHAR(190) NOT NULL UNIQUE,
   phone_number    VARCHAR(30) NULL,
-  room_number     VARCHAR(20) NULL,
-  key_card_id     VARCHAR(64) NULL,
   password_hash   VARCHAR(255) NOT NULL,
   created_by      BIGINT UNSIGNED NULL,
   created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   active          TINYINT(1) DEFAULT 1,
   
   INDEX idx_users_role (role),
-  INDEX idx_users_room (room_number),
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 ```
 
+### Guests Table
+Guest-specific fields (extends users):
+
+| Column           | Type         | Description                          |
+|------------------|--------------|--------------------------------------|
+| `user_id`        | BIGINT       | FK to users.id                       |
+| `room_number`    | VARCHAR(20)  | Assigned room                        |
+| `key_card_id`    | VARCHAR(64)  | Physical key card identifier         |
+| `check_in_date`  | DATE         | Check-in date                        |
+| `check_out_date` | DATE         | Check-out date                       |
+| `guest_code`     | VARCHAR(10)  | Auto-generated access code           |
+| `vip_status`     | TINYINT(1)   | VIP flag                             |
+| `special_requests` | TEXT       | Special accommodation requests       |
+
+### Staff Table
+Staff-specific fields (extends users):
+
+| Column              | Type         | Description                          |
+|---------------------|--------------|--------------------------------------|
+| `user_id`           | BIGINT       | FK to users.id                       |
+| `employee_id`       | VARCHAR(20)  | Employee ID number                   |
+| `department`        | ENUM         | front_desk, housekeeping, maintenance, room_service, security, concierge, management |
+| `shift`             | ENUM         | morning, afternoon, night            |
+| `hire_date`         | DATE         | Employment start date                |
+| `supervisor_id`     | BIGINT       | FK to staff.id (self-referencing)    |
+| `can_manage_guests` | TINYINT(1)   | Permission flag                      |
+| `can_manage_requests` | TINYINT(1) | Permission flag                      |
+
+### Admins Table
+Admin-specific fields (extends users):
+
+| Column             | Type         | Description                          |
+|--------------------|--------------|--------------------------------------|
+| `user_id`          | BIGINT       | FK to users.id                       |
+| `access_level`     | ENUM         | super_admin, admin, manager          |
+| `can_manage_users` | TINYINT(1)   | Permission flag                      |
+| `can_manage_staff` | TINYINT(1)   | Permission flag                      |
+| `can_manage_rooms` | TINYINT(1)   | Permission flag                      |
+| `can_manage_system`| TINYINT(1)   | Permission flag                      |
+| `can_view_logs`    | TINYINT(1)   | Permission flag                      |
+| `can_export_data`  | TINYINT(1)   | Permission flag                      |
+| `last_login_at`    | TIMESTAMP    | Last login timestamp                 |
+
+### Additional Tables
+
+| Table              | Description                                      |
+|--------------------|--------------------------------------------------|
+| `rooms`            | Room inventory (number, floor, type, status, price, amenities) |
+| `service_requests` | Guest service requests with priority, status, assignment |
+| `system_logs`      | Audit trail for admin monitoring                 |
+
 ### User Roles
-- **admin**: Full system access, user management
-- **staff**: Guest management, service request handling
-- **guest**: Room controls, service requests, chat
+- **admin**: Full system access, user management, system configuration
+- **staff**: Guest management, service request handling, room monitoring
+- **guest**: Room controls, service requests, chat with concierge
 
 ---
 
@@ -427,10 +500,10 @@ The main application controller with 1500+ lines of functionality:
 
 ## License
 
-This project is proprietary software for Golden Peacock Hotel.
+This project is proprietary software for Golden Peacock Hotel done as a school project.
 
 ---
 
 ## Support
 
-For technical support, contact the development team or call +265 991 123 456.
+For technical support, contact the development team or call +265 996850711.
