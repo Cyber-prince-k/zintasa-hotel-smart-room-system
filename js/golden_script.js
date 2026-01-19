@@ -898,6 +898,7 @@ class SmartRoomSystem {
 
         if (section === 'communication') {
             this.loadMessages();
+            this.startMessagePolling();
             const sendMessageBtn = document.getElementById('sendMessageBtn');
             const messageInput = document.getElementById('messageInput');
             if (sendMessageBtn && messageInput) {
@@ -910,6 +911,8 @@ class SmartRoomSystem {
             if (refreshMessagesBtn) {
                 refreshMessagesBtn.addEventListener('click', () => this.loadMessages());
             }
+        } else {
+            this.stopMessagePolling();
         }
 
         if (section === 'dashboard') {
@@ -1387,6 +1390,7 @@ class SmartRoomSystem {
 
         if (section === 'messages') {
             this.loadRoomsWithMessages();
+            this.startMessagePolling();
             
             const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
             if (refreshRoomsBtn) {
@@ -1401,6 +1405,8 @@ class SmartRoomSystem {
                     if (e.key === 'Enter') this.sendMessage(this.currentRoomNumber);
                 });
             }
+        } else {
+            this.stopMessagePolling();
         }
     }
 
@@ -2787,6 +2793,29 @@ class SmartRoomSystem {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    startMessagePolling() {
+        this.stopMessagePolling(); // Clear any existing interval
+        this.messagePollingInterval = setInterval(() => {
+            if (this.currentRoomNumber) {
+                this.loadMessages(this.currentRoomNumber);
+            } else {
+                this.loadMessages();
+            }
+            // Also refresh rooms list for staff
+            const roomsContainer = document.getElementById('roomsListContainer');
+            if (roomsContainer) {
+                this.loadRoomsWithMessages();
+            }
+        }, 5000); // Poll every 5 seconds
+    }
+
+    stopMessagePolling() {
+        if (this.messagePollingInterval) {
+            clearInterval(this.messagePollingInterval);
+            this.messagePollingInterval = null;
+        }
     }
 
     async loadRoomsWithMessages() {
