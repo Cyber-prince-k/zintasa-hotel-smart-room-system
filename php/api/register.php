@@ -105,27 +105,47 @@ if ($role === 'guest') {
 try {
     $pdo->beginTransaction();
 
-    // Get creator ID
-    $creatorId = (int)($actor['id'] ?? 0);
-    if ($creatorId > 0) {
-        $chk = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
-        $chk->execute([':id' => $creatorId]);
-        if (!$chk->fetch()) {
-            $creatorId = 0;
+    // Get available columns in users table
+    $columns = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+    $hasPhoneNumber = in_array('phone_number', $columns);
+    $hasCreatedBy = in_array('created_by', $columns);
+
+    // Get creator ID if column exists
+    $creatorId = 0;
+    if ($hasCreatedBy) {
+        $creatorId = (int)($actor['id'] ?? 0);
+        if ($creatorId > 0) {
+            $chk = $pdo->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+            $chk->execute([':id' => $creatorId]);
+            if (!$chk->fetch()) {
+                $creatorId = 0;
+            }
         }
     }
 
-    // Insert into base users table
-    $stmt = $pdo->prepare('INSERT INTO users (role, full_name, username, email, phone_number, password_hash, created_by) VALUES (:role, :full_name, :username, :email, :phone_number, :password_hash, :created_by)');
-    $stmt->execute([
+    // Build dynamic INSERT query based on available columns
+    $insertCols = ['role', 'full_name', 'username', 'email', 'password_hash'];
+    $insertParams = [
         ':role' => $role,
         ':full_name' => $fullName,
         ':username' => $username !== '' ? $username : null,
         ':email' => $email,
-        ':phone_number' => $phoneNumber !== '' ? $phoneNumber : null,
         ':password_hash' => $passwordHash,
-        ':created_by' => $creatorId > 0 ? $creatorId : null,
-    ]);
+    ];
+
+    if ($hasPhoneNumber) {
+        $insertCols[] = 'phone_number';
+        $insertParams[':phone_number'] = $phoneNumber !== '' ? $phoneNumber : null;
+    }
+    if ($hasCreatedBy) {
+        $insertCols[] = 'created_by';
+        $insertParams[':created_by'] = $creatorId > 0 ? $creatorId : null;
+    }
+
+    $placeholders = array_map(fn($c) => ':' . $c, $insertCols);
+    $sql = 'INSERT INTO users (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', $placeholders) . ')';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($insertParams);
 
     $newUserId = (int)$pdo->lastInsertId();
 
