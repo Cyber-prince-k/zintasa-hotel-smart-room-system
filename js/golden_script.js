@@ -769,27 +769,17 @@ class SmartRoomSystem {
                 <div class="card-header">
                     <h3 class="card-title">Staff Communication</h3>
                     <div class="card-actions">
-                        <button class="action-btn"><i class="fas fa-phone"></i></button>
-                        <button class="action-btn"><i class="fas fa-video"></i></button>
+                        <button class="action-btn" id="refreshMessagesBtn"><i class="fas fa-sync-alt"></i></button>
                     </div>
                 </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                    <div class="message received">
-                        <div class="message-content">Your dinner reservation at 7 PM is confirmed. Would you like a wake-up call tomorrow?</div>
-                        <div class="message-time">Concierge • 10:22 AM</div>
-                    </div>
-                    <div class="message sent">
-                        <div class="message-content">Yes, please set a wake-up call for 7 AM. Thank you!</div>
-                        <div class="message-time">You • 10:25 AM</div>
-                    </div>
-                    <div class="message received">
-                        <div class="message-content">We've completed your room cleaning. Is there anything else you need?</div>
-                        <div class="message-time">Housekeeping • 9:15 AM</div>
+                <div class="card-body" id="messagesContainer" style="max-height: 400px; overflow-y: auto; min-height: 200px;">
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
+                        <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 0.5rem;">Loading messages...</span>
                     </div>
                 </div>
-                <div class="message-input">
-                    <input type="text" placeholder="Type your message..." id="messageInput">
-                    <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+                <div class="message-input" style="display: flex; gap: 0.5rem; padding: 1rem; border-top: 1px solid var(--border-color);">
+                    <input type="text" placeholder="Type your message..." id="messageInput" class="form-control" style="flex: 1;">
+                    <button id="sendMessageBtn" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>`;
     }
@@ -907,6 +897,7 @@ class SmartRoomSystem {
         }
 
         if (section === 'communication') {
+            this.loadMessages();
             const sendMessageBtn = document.getElementById('sendMessageBtn');
             const messageInput = document.getElementById('messageInput');
             if (sendMessageBtn && messageInput) {
@@ -914,6 +905,10 @@ class SmartRoomSystem {
                 messageInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') this.sendMessage();
                 });
+            }
+            const refreshMessagesBtn = document.getElementById('refreshMessagesBtn');
+            if (refreshMessagesBtn) {
+                refreshMessagesBtn.addEventListener('click', () => this.loadMessages());
             }
         }
 
@@ -956,6 +951,7 @@ class SmartRoomSystem {
             'requests-link': 'requests',
             'guests-link': 'guests',
             'addGuestBtn': 'add-guest',
+            'messages-link': 'messages',
             'reports-link': 'reports',
             'schedule-link': 'schedule',
             'staff-tools-link': 'tools'
@@ -984,6 +980,7 @@ class SmartRoomSystem {
             'requests': this.getStaffRequestsContent(),
             'guests': this.getStaffGuestsContent(),
             'add-guest': this.getStaffAddGuestContent(),
+            'messages': this.getStaffMessagesContent(),
             'reports': this.getStaffReportsContent(),
             'schedule': this.getStaffScheduleContent(),
             'tools': this.getStaffToolsContent()
@@ -1207,6 +1204,43 @@ class SmartRoomSystem {
             </div>`;
     }
 
+    getStaffMessagesContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Guest Messages</h2>
+                <p style="color: var(--text-secondary);">Communicate with guests</p>
+            </div>
+            <div class="dashboard-grid grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Active Conversations</h3>
+                        <button class="action-btn" id="refreshRoomsBtn"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div class="card-body" id="roomsListContainer" style="max-height: 400px; overflow-y: auto;">
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
+                            <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 0.5rem;">Loading rooms...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card chat-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Chat</h3>
+                        <span id="currentChatRoom" style="color: var(--text-secondary);">Select a room</span>
+                    </div>
+                    <div class="card-body" id="messagesContainer" style="max-height: 350px; overflow-y: auto; min-height: 200px;">
+                        <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                            <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>Select a room to view messages</p>
+                        </div>
+                    </div>
+                    <div class="message-input" style="display: flex; gap: 0.5rem; padding: 1rem; border-top: 1px solid var(--border-color);">
+                        <input type="text" placeholder="Type your reply..." id="messageInput" class="form-control" style="flex: 1;" disabled>
+                        <button id="sendMessageBtn" class="btn btn-primary" disabled><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
     getStaffReportsContent() {
         return `
             <div class="page-header" style="margin-bottom: 1.5rem;">
@@ -1348,6 +1382,24 @@ class SmartRoomSystem {
             const createGuest = document.getElementById('createGuest');
             if (createGuest) {
                 createGuest.addEventListener('click', () => this.handleCreateGuest());
+            }
+        }
+
+        if (section === 'messages') {
+            this.loadRoomsWithMessages();
+            
+            const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
+            if (refreshRoomsBtn) {
+                refreshRoomsBtn.addEventListener('click', () => this.loadRoomsWithMessages());
+            }
+
+            const sendMessageBtn = document.getElementById('sendMessageBtn');
+            const messageInput = document.getElementById('messageInput');
+            if (sendMessageBtn && messageInput) {
+                sendMessageBtn.addEventListener('click', () => this.sendMessage(this.currentRoomNumber));
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage(this.currentRoomNumber);
+                });
             }
         }
     }
@@ -2620,6 +2672,231 @@ class SmartRoomSystem {
 
         const topAvatar = document.querySelector('#userMenu .user-avatar-small');
         if (topAvatar && initials) topAvatar.textContent = initials;
+    }
+
+    async loadMessages(roomNumber = null) {
+        const container = document.getElementById('messagesContainer');
+        if (!container) return;
+
+        try {
+            let url = this.getApiPath('messages.php');
+            if (roomNumber) {
+                url += `?room=${encodeURIComponent(roomNumber)}`;
+            }
+
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load messages');
+            }
+
+            const messages = data.messages || [];
+            this.currentRoomNumber = data.room_number || roomNumber;
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No messages yet. Start a conversation!</p>
+                    </div>`;
+                return;
+            }
+
+            const currentUserId = this.user?.id;
+            container.innerHTML = messages.map(msg => {
+                const isSent = msg.sender_id == currentUserId;
+                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const senderLabel = isSent ? 'You' : (msg.sender_name || 'Staff');
+                
+                return `
+                    <div class="message ${isSent ? 'sent' : 'received'}" style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: ${isSent ? 'flex-end' : 'flex-start'};
+                        margin-bottom: 1rem;
+                    ">
+                        <div class="message-content" style="
+                            background: ${isSent ? 'var(--primary-color)' : 'var(--bg-secondary)'};
+                            color: ${isSent ? 'white' : 'var(--text-primary)'};
+                            padding: 0.75rem 1rem;
+                            border-radius: 1rem;
+                            max-width: 70%;
+                        ">${this.escapeHtml(msg.message)}</div>
+                        <div class="message-time" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            ${senderLabel} • ${time}
+                        </div>
+                    </div>`;
+            }).join('');
+
+            container.scrollTop = container.scrollHeight;
+        } catch (err) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>${err.message || 'Failed to load messages'}</p>
+                    <button class="btn btn-primary btn-sm mt-4" onclick="window.smartRoomSystem.loadMessages()">Retry</button>
+                </div>`;
+        }
+    }
+
+    async sendMessage(roomNumber = null) {
+        const input = document.getElementById('messageInput');
+        if (!input) return;
+
+        const message = input.value.trim();
+        if (!message) {
+            this.showToast('Please enter a message', 'warning');
+            return;
+        }
+
+        const sendBtn = document.getElementById('sendMessageBtn');
+        if (sendBtn) sendBtn.disabled = true;
+
+        try {
+            const payload = { message };
+            if (roomNumber || this.currentRoomNumber) {
+                payload.room_number = roomNumber || this.currentRoomNumber;
+            }
+
+            const res = await fetch(this.getApiPath('messages.php'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to send message');
+            }
+
+            input.value = '';
+            await this.loadMessages(roomNumber);
+        } catch (err) {
+            this.showToast(err.message || 'Failed to send message', 'error');
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    async loadRoomsWithMessages() {
+        const container = document.getElementById('roomsListContainer');
+        if (!container) return;
+
+        try {
+            const res = await fetch(this.getApiPath('messages.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load messages');
+            }
+
+            const messages = data.messages || [];
+            
+            // Group messages by room
+            const roomsMap = new Map();
+            messages.forEach(msg => {
+                if (!msg.room_number) return;
+                if (!roomsMap.has(msg.room_number)) {
+                    roomsMap.set(msg.room_number, {
+                        room_number: msg.room_number,
+                        lastMessage: msg,
+                        unreadCount: 0
+                    });
+                }
+                const room = roomsMap.get(msg.room_number);
+                // Update last message if this one is newer
+                if (new Date(msg.created_at) > new Date(room.lastMessage.created_at)) {
+                    room.lastMessage = msg;
+                }
+                // Count unread messages from guests
+                if (msg.is_from_guest && !msg.is_read) {
+                    room.unreadCount++;
+                }
+            });
+
+            const rooms = Array.from(roomsMap.values()).sort((a, b) => 
+                new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at)
+            );
+
+            if (rooms.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No conversations yet</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = rooms.map(room => {
+                const preview = room.lastMessage.message.substring(0, 50) + (room.lastMessage.message.length > 50 ? '...' : '');
+                const time = new Date(room.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="room-message-item" data-room="${room.room_number}" style="
+                        padding: 1rem;
+                        border-bottom: 1px solid var(--border-color);
+                        cursor: pointer;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <strong style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-door-open"></i> Room ${room.room_number}
+                                    ${room.unreadCount > 0 ? `<span class="status-badge danger" style="font-size: 0.7rem;">${room.unreadCount}</span>` : ''}
+                                </strong>
+                                <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.875rem;">${this.escapeHtml(preview)}</p>
+                            </div>
+                            <span style="color: var(--text-secondary); font-size: 0.75rem;">${time}</span>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            // Add click handlers
+            container.querySelectorAll('.room-message-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const roomNum = item.dataset.room;
+                    this.selectRoomChat(roomNum);
+                });
+            });
+
+        } catch (err) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>${err.message || 'Failed to load rooms'}</p>
+                </div>`;
+        }
+    }
+
+    selectRoomChat(roomNumber) {
+        this.currentRoomNumber = roomNumber;
+        
+        // Update header
+        const header = document.getElementById('currentChatRoom');
+        if (header) header.textContent = `Room ${roomNumber}`;
+        
+        // Enable input
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendMessageBtn');
+        if (messageInput) messageInput.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        
+        // Load messages for this room
+        this.loadMessages(roomNumber);
     }
 
     setupAnimations() {

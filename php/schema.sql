@@ -141,6 +141,28 @@ CREATE TABLE IF NOT EXISTS `service_requests` (
 ) ENGINE=InnoDB;
 
 -- ============================================================================
+-- MESSAGES TABLE
+-- Guest-staff messaging system
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `messages` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sender_id` BIGINT UNSIGNED NOT NULL,
+  `recipient_id` BIGINT UNSIGNED NULL,
+  `room_number` VARCHAR(20) NULL,
+  `message` TEXT NOT NULL,
+  `is_from_guest` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_messages_sender` (`sender_id`),
+  KEY `idx_messages_recipient` (`recipient_id`),
+  KEY `idx_messages_room` (`room_number`),
+  KEY `idx_messages_created` (`created_at`),
+  CONSTRAINT `fk_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_messages_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ============================================================================
 -- SYSTEM LOGS TABLE
 -- Audit trail for admin monitoring
 -- ============================================================================
