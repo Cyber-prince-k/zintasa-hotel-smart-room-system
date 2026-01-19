@@ -1139,98 +1139,117 @@ class SmartRoomSystem {
     }
 
     showAddGuestModal() {
-        const modalHtml = `
-            <div class="modal">
-                <div class="modal-header">
-                    <h3>Add Guest</h3>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="addGuestForm">
-                        <div class="form-group">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="guestFullName" required>
-                        </div>
+        const dashboardContent = document.querySelector('.dashboard-content');
+        if (!dashboardContent) return;
 
-                        <div class="form-group">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="guestEmail" required>
-                        </div>
+        // Store original content to restore later
+        if (!this._originalDashboardContent) {
+            this._originalDashboardContent = dashboardContent.innerHTML;
+        }
 
-                        <div class="form-group">
-                            <label class="form-label">Phone Number</label>
-                            <input type="text" class="form-control" id="guestPhoneNumber" placeholder="Optional">
-                        </div>
-                    </form>
-                    <small class="form-text">A vacant room will be assigned automatically and a 7-character access code will be emailed to the guest.</small>
+        const formHtml = `
+            <div class="manage-guests-page">
+                <div class="page-header" style="margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">Manage Guests</h2>
+                    <p style="color: var(--text-secondary); margin-top: 0.5rem;">Add new guests to the system</p>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" id="cancelAddGuest">Cancel</button>
-                    <button class="btn btn-primary" id="createGuest">Create Guest</button>
+
+                <div class="card" style="max-width: 600px;">
+                    <div class="card-header">
+                        <h3 style="font-size: 1.125rem; font-weight: 600;">Add New Guest</h3>
+                    </div>
+                    <div class="card-body" style="padding: 1.5rem;">
+                        <form id="addGuestForm">
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Full Name</label>
+                                <input type="text" class="form-control" id="guestFullName" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email Address</label>
+                                <input type="email" class="form-control" id="guestEmail" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Phone Number</label>
+                                <input type="text" class="form-control" id="guestPhoneNumber" placeholder="Optional" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px;">
+                            </div>
+                        </form>
+                        <small class="form-text" style="color: var(--text-secondary); display: block; margin-top: 1rem;">A vacant room will be assigned automatically and a 7-character access code will be emailed to the guest.</small>
+                    </div>
+                    <div class="card-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="btn btn-secondary" id="cancelAddGuest" style="padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">Back to Dashboard</button>
+                        <button class="btn btn-primary" id="createGuest" style="padding: 0.75rem 1.5rem; border-radius: 8px; background: var(--primary-gradient); color: white; border: none; cursor: pointer;">Create Guest</button>
+                    </div>
                 </div>
             </div>
         `;
 
-        this.showModal(modalHtml);
+        dashboardContent.innerHTML = formHtml;
 
-        setTimeout(() => {
-            const cancelBtn = document.getElementById('cancelAddGuest');
-            const createBtn = document.getElementById('createGuest');
+        const cancelBtn = document.getElementById('cancelAddGuest');
+        const createBtn = document.getElementById('createGuest');
 
-            if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeModal());
-            const closeBtn = document.querySelector('.modal-close');
-            if (closeBtn) closeBtn.addEventListener('click', () => this.closeModal());
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                if (this._originalDashboardContent) {
+                    dashboardContent.innerHTML = this._originalDashboardContent;
+                }
+            });
+        }
 
-            if (createBtn) {
-                createBtn.addEventListener('click', async () => {
-                    const fullName = document.getElementById('guestFullName')?.value;
-                    const email = document.getElementById('guestEmail')?.value;
-                    const phoneNumber = document.getElementById('guestPhoneNumber')?.value;
+        if (createBtn) {
+            createBtn.addEventListener('click', async () => {
+                const fullName = document.getElementById('guestFullName')?.value;
+                const email = document.getElementById('guestEmail')?.value;
+                const phoneNumber = document.getElementById('guestPhoneNumber')?.value;
 
-                    if (!fullName || !email) {
-                        this.showToast('Please fill in full name and email', 'error');
-                        return;
+                if (!fullName || !email) {
+                    this.showToast('Please fill in full name and email', 'error');
+                    return;
+                }
+
+                const payload = {
+                    role: 'guest',
+                    full_name: String(fullName).trim(),
+                    email: String(email).trim(),
+                    phone_number: String(phoneNumber || '').trim(),
+                };
+
+                try {
+                    const res = await fetch(this.getApiPath('register.php'), {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json().catch(() => null);
+                    if (!res.ok || !data || data.ok !== true || !data.user) {
+                        const msg = (data && data.error) ? data.error : 'Failed to create guest';
+                        throw new Error(msg);
                     }
 
-                    const payload = {
-                        role: 'guest',
-                        full_name: String(fullName).trim(),
-                        email: String(email).trim(),
-                        phone_number: String(phoneNumber || '').trim(),
-                    };
-
-                    try {
-                        const res = await fetch(this.getApiPath('register.php'), {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const data = await res.json().catch(() => null);
-                        if (!res.ok || !data || data.ok !== true || !data.user) {
-                            const msg = (data && data.error) ? data.error : 'Failed to create guest';
-                            throw new Error(msg);
-                        }
-
-                        const room = data.user.room_number ? String(data.user.room_number) : '';
-                        if (data.warning) {
-                            const detail = data.warning_detail ? ` (${data.warning_detail})` : '';
-                            const code = data.guest_code ? ` Code: ${data.guest_code}` : '';
-                            this.showToast(`${data.warning}${detail}${room ? ` Room ${room}.` : ''}${code}`, 'warning');
-                        } else {
-                            this.showToast(`Guest created${room ? ` (Room ${room})` : ''}. Access code sent via email.`, 'success');
-                        }
-
-                        this.closeModal();
-                    } catch (err) {
-                        this.showToast(err?.message || 'Failed to create guest', 'error');
+                    const room = data.user.room_number ? String(data.user.room_number) : '';
+                    if (data.warning) {
+                        const detail = data.warning_detail ? ` (${data.warning_detail})` : '';
+                        const code = data.guest_code ? ` Code: ${data.guest_code}` : '';
+                        this.showToast(`${data.warning}${detail}${room ? ` Room ${room}.` : ''}${code}`, 'warning');
+                    } else {
+                        this.showToast(`Guest created${room ? ` (Room ${room})` : ''}. Access code sent via email.`, 'success');
                     }
-                });
-            }
-        }, 100);
+
+                    // Clear form after successful creation
+                    document.getElementById('guestFullName').value = '';
+                    document.getElementById('guestEmail').value = '';
+                    document.getElementById('guestPhoneNumber').value = '';
+                } catch (err) {
+                    this.showToast(err?.message || 'Failed to create guest', 'error');
+                }
+            });
+        }
     }
 
     showSystemHealth() {
