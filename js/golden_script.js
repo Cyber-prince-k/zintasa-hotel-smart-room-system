@@ -1401,37 +1401,397 @@ class SmartRoomSystem {
 
     setupAdminDashboard() {
         this.renderCurrentUser();
+        this.setupAdminNavigation();
+        this.showAdminSection('dashboard');
+    }
 
-        // Add user button
-        const addUserBtn = document.getElementById('addUserBtn');
-        if (addUserBtn) {
-            addUserBtn.addEventListener('click', () => this.showAddUserModal());
+    setupAdminNavigation() {
+        const navLinks = {
+            'dashboard-link': 'dashboard',
+            'analytics-link': 'analytics',
+            'users-link': 'users',
+            'system-link': 'system',
+            'reports-link': 'reports',
+            'security-link': 'security',
+            'backup-link': 'backup'
+        };
+
+        Object.entries(navLinks).forEach(([linkId, section]) => {
+            const link = document.getElementById(linkId);
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showAdminSection(section);
+                    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                    link.classList.add('active');
+                });
+            }
+        });
+    }
+
+    showAdminSection(section) {
+        const dashboardContent = document.querySelector('.dashboard-content');
+        if (!dashboardContent) return;
+
+        const sections = {
+            'dashboard': this.getAdminDashboardContent(),
+            'analytics': this.getAdminAnalyticsContent(),
+            'users': this.getAdminUsersContent(),
+            'system': this.getAdminSystemContent(),
+            'reports': this.getAdminReportsContent(),
+            'security': this.getAdminSecurityContent(),
+            'backup': this.getAdminBackupContent()
+        };
+
+        dashboardContent.innerHTML = sections[section] || sections['dashboard'];
+        this.initializeAdminSectionEvents(section);
+    }
+
+    getAdminDashboardContent() {
+        return `
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary"><i class="fas fa-microchip"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">98%</div>
+                        <div class="stat-label">System Uptime</div>
+                        <div class="stat-change positive"><i class="fas fa-arrow-up"></i><span>30 days stable</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success"><i class="fas fa-plug"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">160/160</div>
+                        <div class="stat-label">IoT Devices Online</div>
+                        <div class="stat-change"><i class="fas fa-check-circle"></i><span>All connected</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning"><i class="fas fa-database"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">2.4TB</div>
+                        <div class="stat-label">Data Storage Used</div>
+                        <div class="stat-change negative"><i class="fas fa-arrow-up"></i><span>65% of capacity</span></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon danger"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Security Alerts</div>
+                        <div class="stat-change positive"><i class="fas fa-check"></i><span>No threats detected</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-grid grid-2" style="margin-top: 1.5rem;">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">System Health Monitor</h3><span class="text-success"><i class="fas fa-check-circle"></i> All Systems Normal</span></div>
+                    <div class="card-body">
+                        <div class="health-monitor">
+                            <div class="health-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+                                <div><i class="fas fa-server" style="margin-right: 0.5rem;"></i><span>Web Server</span></div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 100px; height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 95%; height: 100%; background: var(--success-color); border-radius: 4px;"></div></div><span>95%</span></div>
+                            </div>
+                            <div class="health-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+                                <div><i class="fas fa-database" style="margin-right: 0.5rem;"></i><span>Database</span></div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 100px; height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 88%; height: 100%; background: var(--success-color); border-radius: 4px;"></div></div><span>88%</span></div>
+                            </div>
+                            <div class="health-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+                                <div><i class="fas fa-plug" style="margin-right: 0.5rem;"></i><span>IoT Gateway</span></div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 100px; height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 100%; height: 100%; background: var(--success-color); border-radius: 4px;"></div></div><span>100%</span></div>
+                            </div>
+                            <div class="health-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0;">
+                                <div><i class="fas fa-shield-alt" style="margin-right: 0.5rem;"></i><span>Security System</span></div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 100px; height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 100%; height: 100%; background: var(--success-color); border-radius: 4px;"></div></div><span>100%</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Recent System Logs</h3><button class="btn btn-primary btn-sm" id="exportLogsBtn"><i class="fas fa-download"></i> Export</button></div>
+                    <div class="card-body">
+                        <div class="logs-container">
+                            <div style="display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);"><span style="color: var(--text-secondary); min-width: 70px;">14:30:22</span><span class="status-badge info" style="font-size: 0.7rem;">INFO</span><span>User 'Admin' logged in successfully</span></div>
+                            <div style="display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);"><span style="color: var(--text-secondary); min-width: 70px;">14:25:18</span><span class="status-badge success" style="font-size: 0.7rem;">SUCCESS</span><span>Room 205 temperature adjusted</span></div>
+                            <div style="display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);"><span style="color: var(--text-secondary); min-width: 70px;">14:15:42</span><span class="status-badge warning" style="font-size: 0.7rem;">WARNING</span><span>Energy threshold exceeded in 312</span></div>
+                            <div style="display: flex; gap: 1rem; padding: 0.5rem 0;"><span style="color: var(--text-secondary); min-width: 70px;">14:10:05</span><span class="status-badge info" style="font-size: 0.7rem;">INFO</span><span>Backup completed successfully</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminAnalyticsContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Analytics</h2>
+                <p style="color: var(--text-secondary);">System usage and performance analytics</p>
+            </div>
+            <div class="dashboard-grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">System Usage</h3>
+                        <select class="form-control" style="width: auto;"><option>Last 7 Days</option><option>Last 30 Days</option><option>Last 90 Days</option></select>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
+                            <div><span style="color: var(--text-secondary); display: block;">Avg Response Time</span><span style="font-size: 1.5rem; font-weight: 600;">142ms</span></div>
+                            <div><span style="color: var(--text-secondary); display: block;">Peak Users</span><span style="font-size: 1.5rem; font-weight: 600;">2,847</span></div>
+                        </div>
+                        <div style="height: 150px; background: var(--bg-secondary); border-radius: 8px; display: flex; align-items: flex-end; justify-content: space-around; padding: 1rem;">
+                            <div style="width: 12%; height: 40%; background: var(--primary-color); border-radius: 4px;"></div>
+                            <div style="width: 12%; height: 60%; background: var(--primary-color); border-radius: 4px;"></div>
+                            <div style="width: 12%; height: 80%; background: var(--primary-color); border-radius: 4px;"></div>
+                            <div style="width: 12%; height: 95%; background: var(--primary-color); border-radius: 4px;"></div>
+                            <div style="width: 12%; height: 75%; background: var(--primary-color); border-radius: 4px;"></div>
+                            <div style="width: 12%; height: 65%; background: var(--primary-color); border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Resource Usage</h3></div>
+                    <div class="card-body">
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>CPU Usage</span><span>45%</span></div>
+                            <div style="height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 45%; height: 100%; background: var(--success-color); border-radius: 4px;"></div></div>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Memory Usage</span><span>72%</span></div>
+                            <div style="height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 72%; height: 100%; background: var(--warning-color); border-radius: 4px;"></div></div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Storage Usage</span><span>65%</span></div>
+                            <div style="height: 8px; background: var(--border-color); border-radius: 4px;"><div style="width: 65%; height: 100%; background: var(--warning-color); border-radius: 4px;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminUsersContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">User Management</h2>
+                    <p style="color: var(--text-secondary);">Manage system users and permissions</p>
+                </div>
+                <button class="btn btn-primary" id="addUserBtn"><i class="fas fa-user-plus"></i><span>Add User</span></button>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead><tr><th>User</th><th>Role</th><th>Last Active</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><div style="display: flex; align-items: center; gap: 0.75rem;"><div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">AD</div><div><strong>Admin User</strong><br><small style="color: var(--text-secondary);">admin@goldenpeacock.com</small></div></div></td>
+                                    <td><span class="status-badge" style="background: var(--danger-color); color: white;">Admin</span></td>
+                                    <td>Just now</td>
+                                    <td><span class="status-badge success">Active</span></td>
+                                    <td><button class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-secondary btn-sm"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                                <tr>
+                                    <td><div style="display: flex; align-items: center; gap: 0.75rem;"><div style="width: 32px; height: 32px; border-radius: 50%; background: var(--success-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">SM</div><div><strong>Staff Manager</strong><br><small style="color: var(--text-secondary);">manager@goldenpeacock.com</small></div></div></td>
+                                    <td><span class="status-badge" style="background: var(--primary-color); color: white;">Staff</span></td>
+                                    <td>2 hours ago</td>
+                                    <td><span class="status-badge success">Active</span></td>
+                                    <td><button class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-secondary btn-sm"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                                <tr>
+                                    <td><div style="display: flex; align-items: center; gap: 0.75rem;"><div style="width: 32px; height: 32px; border-radius: 50%; background: var(--warning-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">CK</div><div><strong>Concierge</strong><br><small style="color: var(--text-secondary);">concierge@goldenpeacock.com</small></div></div></td>
+                                    <td><span class="status-badge" style="background: var(--primary-color); color: white;">Staff</span></td>
+                                    <td>1 day ago</td>
+                                    <td><span class="status-badge success">Active</span></td>
+                                    <td><button class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></button> <button class="btn btn-secondary btn-sm"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminSystemContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">System Configuration</h2>
+                    <p style="color: var(--text-secondary);">Configure system settings and preferences</p>
+                </div>
+                <button class="btn btn-success" id="saveConfigBtn"><i class="fas fa-save"></i><span>Save Changes</span></button>
+            </div>
+            <div class="dashboard-grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">IoT Device Settings</h3></div>
+                    <div class="card-body">
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Auto Device Detection</span><div class="control-toggle"><input type="checkbox" id="autoDetect" checked><label for="autoDetect"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Device Health Monitoring</span><div class="control-toggle"><input type="checkbox" id="healthMonitor" checked><label for="healthMonitor"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0;"><span>Auto Firmware Updates</span><div class="control-toggle"><input type="checkbox" id="autoUpdates"><label for="autoUpdates"></label></div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Energy Management</h3></div>
+                    <div class="card-body">
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Auto Power Saving</span><div class="control-toggle"><input type="checkbox" id="autoPowerSaving" checked><label for="autoPowerSaving"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Peak Hours Reduction</span><div class="control-toggle"><input type="checkbox" id="peakReduction" checked><label for="peakReduction"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0;"><span>Energy Reports</span><div class="control-toggle"><input type="checkbox" id="energyReports" checked><label for="energyReports"></label></div></div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminReportsContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Reports</h2>
+                <p style="color: var(--text-secondary);">Generate and download system reports</p>
+            </div>
+            <div class="dashboard-grid grid-3">
+                <div class="card" style="cursor: pointer;">
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-chart-pie" style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                        <h4>Occupancy Report</h4>
+                        <p style="color: var(--text-secondary);">Room occupancy statistics</p>
+                        <button class="btn btn-primary mt-4"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                </div>
+                <div class="card" style="cursor: pointer;">
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-bolt" style="font-size: 2.5rem; color: var(--warning-color); margin-bottom: 1rem;"></i>
+                        <h4>Energy Report</h4>
+                        <p style="color: var(--text-secondary);">Energy consumption data</p>
+                        <button class="btn btn-primary mt-4"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                </div>
+                <div class="card" style="cursor: pointer;">
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-users" style="font-size: 2.5rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                        <h4>User Activity</h4>
+                        <p style="color: var(--text-secondary);">User login and activity logs</p>
+                        <button class="btn btn-primary mt-4"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminSecurityContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Security</h2>
+                <p style="color: var(--text-secondary);">Monitor and manage system security</p>
+            </div>
+            <div class="dashboard-grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Security Status</h3></div>
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-shield-alt" style="font-size: 4rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                        <h4 style="color: var(--success-color);">All Systems Secure</h4>
+                        <p style="color: var(--text-secondary);">No threats detected</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Security Settings</h3></div>
+                    <div class="card-body">
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Two-Factor Authentication</span><div class="control-toggle"><input type="checkbox" id="twoFactor" checked><label for="twoFactor"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0; border-bottom: 1px solid var(--border-color);"><span>Login Notifications</span><div class="control-toggle"><input type="checkbox" id="loginNotif" checked><label for="loginNotif"></label></div></div>
+                        <div class="light-control-item" style="padding: 1rem 0;"><span>Auto Session Timeout</span><div class="control-toggle"><input type="checkbox" id="sessionTimeout" checked><label for="sessionTimeout"></label></div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Recent Login Activity</h3></div>
+                    <div class="card-body">
+                        <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);"><strong>Admin User</strong> - Just now<br><small style="color: var(--text-secondary);">IP: 192.168.1.100</small></div>
+                        <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);"><strong>Staff Manager</strong> - 2 hours ago<br><small style="color: var(--text-secondary);">IP: 192.168.1.105</small></div>
+                        <div style="padding: 0.75rem 0;"><strong>Concierge</strong> - 1 day ago<br><small style="color: var(--text-secondary);">IP: 192.168.1.110</small></div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    getAdminBackupContent() {
+        return `
+            <div class="page-header" style="margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Backup & Restore</h2>
+                <p style="color: var(--text-secondary);">Manage system backups and data recovery</p>
+            </div>
+            <div class="dashboard-grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Create Backup</h3></div>
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Create a full system backup</p>
+                        <button class="btn btn-primary" id="createBackupBtn"><i class="fas fa-plus"></i> Create Backup</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Restore Data</h3></div>
+                    <div class="card-body" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-cloud-download-alt" style="font-size: 3rem; color: var(--warning-color); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">Restore from a previous backup</p>
+                        <button class="btn btn-warning" id="restoreBackupBtn"><i class="fas fa-undo"></i> Restore</button>
+                    </div>
+                </div>
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header"><h3 class="card-title">Backup History</h3></div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Date</th><th>Size</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Jan 19, 2026 - 14:10</td><td>2.4 GB</td><td>Full Backup</td><td><span class="status-badge success">Completed</span></td><td><button class="btn btn-secondary btn-sm"><i class="fas fa-download"></i></button></td></tr>
+                                    <tr><td>Jan 18, 2026 - 02:00</td><td>2.3 GB</td><td>Auto Backup</td><td><span class="status-badge success">Completed</span></td><td><button class="btn btn-secondary btn-sm"><i class="fas fa-download"></i></button></td></tr>
+                                    <tr><td>Jan 17, 2026 - 02:00</td><td>2.3 GB</td><td>Auto Backup</td><td><span class="status-badge success">Completed</span></td><td><button class="btn btn-secondary btn-sm"><i class="fas fa-download"></i></button></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    initializeAdminSectionEvents(section) {
+        if (section === 'dashboard') {
+            const exportLogsBtn = document.getElementById('exportLogsBtn');
+            if (exportLogsBtn) {
+                exportLogsBtn.addEventListener('click', () => this.showToast('Logs exported successfully', 'success'));
+            }
         }
 
-        // Save config button
-        const saveConfigBtn = document.getElementById('saveConfigBtn');
-        if (saveConfigBtn) {
-            saveConfigBtn.addEventListener('click', () => {
-                this.showToast('Configuration saved successfully', 'success');
+        if (section === 'users') {
+            const addUserBtn = document.getElementById('addUserBtn');
+            if (addUserBtn) {
+                addUserBtn.addEventListener('click', () => this.showAddUserModal());
+            }
+        }
+
+        if (section === 'system') {
+            const saveConfigBtn = document.getElementById('saveConfigBtn');
+            if (saveConfigBtn) {
+                saveConfigBtn.addEventListener('click', () => this.showToast('Configuration saved successfully', 'success'));
+            }
+        }
+
+        if (section === 'backup') {
+            const createBackupBtn = document.getElementById('createBackupBtn');
+            if (createBackupBtn) {
+                createBackupBtn.addEventListener('click', () => this.showToast('Backup started...', 'info'));
+            }
+            const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+            if (restoreBackupBtn) {
+                restoreBackupBtn.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to restore from backup? This will overwrite current data.')) {
+                        this.showToast('Restore started...', 'warning');
+                    }
+                });
+            }
+        }
+
+        document.querySelectorAll('.control-toggle input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const label = e.target.closest('.light-control-item')?.querySelector('span')?.textContent || 'Setting';
+                const state = e.target.checked ? 'enabled' : 'disabled';
+                this.showToast(`${label} ${state}`, e.target.checked ? 'success' : 'warning');
             });
-        }
-
-        // System health button
-        const systemHealthBtn = document.getElementById('systemHealthBtn');
-        if (systemHealthBtn) {
-            systemHealthBtn.addEventListener('click', () => this.showSystemHealth());
-        }
-
-        // Export buttons
-        const exportLogsBtn = document.getElementById('exportLogsBtn');
-        if (exportLogsBtn) {
-            exportLogsBtn.addEventListener('click', () => {
-                this.showToast('Logs exported successfully', 'success');
-            });
-        }
-
-        // Initialize admin tools
-        this.setupAdminTools();
+        });
     }
 
     setupRoomControls() {
