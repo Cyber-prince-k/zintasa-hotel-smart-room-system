@@ -159,10 +159,25 @@ try {
         $pdo->rollBack();
     }
 
+    $msg = $e->getMessage();
+
+    // Handle specific database errors
+    if (stripos($msg, 'Duplicate entry') !== false && stripos($msg, 'email') !== false) {
+        json_response(['ok' => false, 'error' => 'Email address already exists'], 409);
+    }
+    if (stripos($msg, 'Duplicate entry') !== false && stripos($msg, 'username') !== false) {
+        json_response(['ok' => false, 'error' => 'Username already exists'], 409);
+    }
+    if (stripos($msg, "Table") !== false && stripos($msg, "doesn't exist") !== false) {
+        json_response(['ok' => false, 'error' => 'Database tables not found. Please import the new schema.sql file.'], 500);
+    }
+    if (stripos($msg, 'Unknown column') !== false) {
+        json_response(['ok' => false, 'error' => 'Database schema outdated. Please import the new schema.sql file.'], 500);
+    }
+
     json_response([
         'ok' => false,
-        'error' => 'Failed to create user',
-        'error_detail' => $e->getMessage(),
+        'error' => $msg,
     ], 400);
 }
 
