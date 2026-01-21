@@ -3061,13 +3061,15 @@ class SmartRoomSystem {
                                 actionBtn = `<button class="btn btn-secondary btn-sm" onclick="window.smartRoomSystem.viewRequestDetails(${req.id})">View</button>`;
                             }
                             
+                            const description = req.description ? this.escapeHtml(req.description.substring(0, 50)) + (req.description.length > 50 ? '...' : '') : 'No details';
+                            
                             return `
-                                <tr>
-                                    <td>#${typePrefix}${req.id}</td>
-                                    <td>${req.room_number}</td>
+                                <tr title="${this.escapeHtml(req.description || '')}">
+                                    <td>#${typePrefix}${req.id || ''}</td>
+                                    <td>${req.room_number || 'N/A'}</td>
                                     <td>${this.escapeHtml(req.guest_name || 'N/A')}</td>
-                                    <td>${typeLabel}</td>
-                                    <td><span class="status-badge ${priorityClass}">${req.priority}</span></td>
+                                    <td><strong>${typeLabel}</strong><br><small style="color: var(--text-secondary);">${description}</small></td>
+                                    <td><span class="status-badge ${priorityClass}">${req.priority || 'medium'}</span></td>
                                     <td>${time}</td>
                                     <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
                                     <td>${actionBtn}</td>
