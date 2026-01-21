@@ -934,6 +934,27 @@ class SmartRoomSystem {
         this.renderCurrentUser();
         this.setupStaffNavigation();
         this.showStaffSection('dashboard');
+        this.updatePendingRequestsBadge();
+    }
+
+    async updatePendingRequestsBadge() {
+        try {
+            const res = await fetch(this.getApiPath('service_requests.php') + '?status=pending', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (data.ok) {
+                const count = (data.requests || []).length;
+                const badge = document.getElementById('requestsBadge');
+                if (badge) {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+                }
+            }
+        } catch (err) {
+            console.error('Failed to update requests badge:', err);
+        }
     }
 
     setupStaffNavigation() {
