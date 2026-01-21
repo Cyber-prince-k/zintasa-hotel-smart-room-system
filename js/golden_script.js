@@ -696,21 +696,9 @@ class SmartRoomSystem {
                 <button class="btn btn-primary" id="newRequestBtn"><i class="fas fa-plus"></i><span>New Request</span></button>
             </div>
             <div class="card">
-                <div class="card-body">
-                    <div class="request-item pending">
-                        <div class="request-header"><span class="request-title">Housekeeping</span><span class="request-status pending">Pending</span></div>
-                        <p class="request-description">Room cleaning requested</p>
-                        <div class="request-footer"><span><i class="far fa-clock"></i> 10:30 AM</span><span>Request ID: #HK2051</span></div>
-                    </div>
-                    <div class="request-item completed">
-                        <div class="request-header"><span class="request-title">Room Service</span><span class="request-status completed">Completed</span></div>
-                        <p class="request-description">Breakfast order - Continental</p>
-                        <div class="request-footer"><span><i class="far fa-clock"></i> 8:15 AM</span><span>Request ID: #RS2049</span></div>
-                    </div>
-                    <div class="request-item in-progress">
-                        <div class="request-header"><span class="request-title">Maintenance</span><span class="request-status in-progress">In Progress</span></div>
-                        <p class="request-description">AC noise inspection</p>
-                        <div class="request-footer"><span><i class="far fa-clock"></i> Yesterday</span><span>Request ID: #MN2047</span></div>
+                <div class="card-body" id="serviceRequestsContainer">
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
+                        <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 0.5rem;">Loading requests...</span>
                     </div>
                 </div>
             </div>`;
@@ -890,9 +878,10 @@ class SmartRoomSystem {
         }
 
         if (section === 'services') {
+            this.loadServiceRequests();
             const newRequestBtn = document.getElementById('newRequestBtn');
             if (newRequestBtn) {
-                newRequestBtn.addEventListener('click', () => this.createServiceRequest());
+                newRequestBtn.addEventListener('click', () => this.showNewServiceRequestForm());
             }
         }
 
@@ -2793,6 +2782,216 @@ class SmartRoomSystem {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    async loadServiceRequests() {
+        const container = document.getElementById('serviceRequestsContainer');
+        if (!container) return;
+
+        try {
+            const res = await fetch(this.getApiPath('service_requests.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load requests');
+            }
+
+            const requests = data.requests || [];
+
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-clipboard-list" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No service requests yet</p>
+                        <p style="font-size: 0.875rem;">Click "New Request" to request a service</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = requests.map(req => {
+                const statusClass = req.status.replace('_', '-');
+                const statusLabel = req.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const typeLabel = req.request_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const time = this.formatRequestTime(req.created_at);
+                const typePrefix = req.request_type.substring(0, 2).toUpperCase();
+                
+                return `
+                    <div class="request-item ${statusClass}" style="
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        border-left: 4px solid var(--${statusClass === 'completed' ? 'success' : statusClass === 'pending' ? 'warning' : statusClass === 'in-progress' ? 'info' : 'danger'}-color, var(--primary-color));
+                        background: var(--bg-secondary);
+                        border-radius: 0 8px 8px 0;
+                    ">
+                        <div class="request-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="request-title" style="font-weight: 600;">${typeLabel}</span>
+                            <span class="request-status ${statusClass}" style="
+                                padding: 0.25rem 0.75rem;
+                                border-radius: 20px;
+                                font-size: 0.75rem;
+                                background: var(--${statusClass === 'completed' ? 'success' : statusClass === 'pending' ? 'warning' : statusClass === 'in-progress' ? 'info' : 'danger'}-color, var(--primary-color));
+                                color: white;
+                            ">${statusLabel}</span>
+                        </div>
+                        <p class="request-description" style="color: var(--text-secondary); margin: 0.5rem 0;">${this.escapeHtml(req.description || 'No description')}</p>
+                        <div class="request-footer" style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary);">
+                            <span><i class="far fa-clock"></i> ${time}</span>
+                            <span>Request ID: #${typePrefix}${req.id}</span>
+                        </div>
+                        ${req.status === 'pending' ? `<button class="btn btn-sm btn-danger mt-2" onclick="window.smartRoomSystem.cancelServiceRequest(${req.id})"><i class="fas fa-times"></i> Cancel</button>` : ''}
+                    </div>`;
+            }).join('');
+
+        } catch (err) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>${err.message || 'Failed to load requests'}</p>
+                    <button class="btn btn-primary btn-sm mt-4" onclick="window.smartRoomSystem.loadServiceRequests()">Retry</button>
+                </div>`;
+        }
+    }
+
+    formatRequestTime(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (diffDays === 1) return 'Yesterday';
+        return date.toLocaleDateString();
+    }
+
+    showNewServiceRequestForm() {
+        const modalHtml = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>New Service Request</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="newServiceRequestForm">
+                        <div class="form-group">
+                            <label class="form-label">Service Type</label>
+                            <select class="form-control" id="requestType" required>
+                                <option value="">Select a service...</option>
+                                <option value="housekeeping">Housekeeping</option>
+                                <option value="room_service">Room Service</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="laundry">Laundry</option>
+                                <option value="amenities">Amenities</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-control" id="requestPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="requestDescription" rows="3" placeholder="Describe your request..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Preferred Time (Optional)</label>
+                            <input type="time" class="form-control" id="requestTime">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelRequest">Cancel</button>
+                    <button class="btn btn-primary" id="submitRequest">Submit Request</button>
+                </div>
+            </div>
+        `;
+
+        this.showModal(modalHtml);
+
+        setTimeout(() => {
+            const cancelBtn = document.getElementById('cancelRequest');
+            const submitBtn = document.getElementById('submitRequest');
+            const closeBtn = document.querySelector('.modal-close');
+
+            if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeModal());
+            if (closeBtn) closeBtn.addEventListener('click', () => this.closeModal());
+
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async () => {
+                    const requestType = document.getElementById('requestType')?.value;
+                    const priority = document.getElementById('requestPriority')?.value;
+                    const description = document.getElementById('requestDescription')?.value;
+                    const preferredTime = document.getElementById('requestTime')?.value;
+
+                    if (!requestType) {
+                        this.showToast('Please select a service type', 'error');
+                        return;
+                    }
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+                    try {
+                        const res = await fetch(this.getApiPath('service_requests.php'), {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                request_type: requestType,
+                                priority: priority,
+                                description: description,
+                                preferred_time: preferredTime || null
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (!data.ok) {
+                            throw new Error(data.error || 'Failed to submit request');
+                        }
+
+                        this.showToast('Service request submitted successfully!', 'success');
+                        this.closeModal();
+                        this.loadServiceRequests();
+                    } catch (err) {
+                        this.showToast(err.message || 'Failed to submit request', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Request';
+                    }
+                });
+            }
+        }, 100);
+    }
+
+    async cancelServiceRequest(requestId) {
+        if (!confirm('Are you sure you want to cancel this request?')) return;
+
+        try {
+            const res = await fetch(this.getApiPath('service_requests.php') + `?id=${requestId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to cancel request');
+            }
+
+            this.showToast('Request cancelled', 'success');
+            this.loadServiceRequests();
+        } catch (err) {
+            this.showToast(err.message || 'Failed to cancel request', 'error');
+        }
     }
 
     startMessagePolling() {
