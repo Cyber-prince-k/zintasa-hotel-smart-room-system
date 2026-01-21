@@ -3030,25 +3030,25 @@ class SmartRoomSystem {
             }
 
             container.innerHTML = `
-                <table class="data-table">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr>
-                            <th>Request ID</th>
-                            <th>Room</th>
-                            <th>Guest</th>
-                            <th>Service</th>
-                            <th>Priority</th>
-                            <th>Time</th>
-                            <th>Status</th>
-                            <th>Action</th>
+                        <tr style="background: var(--bg-tertiary, #1a1a2e);">
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Request ID</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Room</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Guest</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Service</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Priority</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Time</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Status</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${requests.map(req => {
-                            const typePrefix = req.request_type.substring(0, 2).toUpperCase();
-                            const typeLabel = req.request_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const typePrefix = (req.request_type || 'OT').substring(0, 2).toUpperCase();
+                            const typeLabel = (req.request_type || 'Other').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
                             const statusClass = this.getStatusBadgeClass(req.status);
-                            const statusLabel = req.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const statusLabel = (req.status || 'pending').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
                             const priorityClass = this.getPriorityClass(req.priority);
                             const time = this.formatRequestTime(req.created_at);
                             
@@ -3064,15 +3064,15 @@ class SmartRoomSystem {
                             const description = req.description ? this.escapeHtml(req.description.substring(0, 50)) + (req.description.length > 50 ? '...' : '') : 'No details';
                             
                             return `
-                                <tr title="${this.escapeHtml(req.description || '')}">
-                                    <td>#${typePrefix}${req.id || ''}</td>
-                                    <td>${req.room_number || 'N/A'}</td>
-                                    <td>${this.escapeHtml(req.guest_name || 'N/A')}</td>
-                                    <td><strong>${typeLabel}</strong><br><small style="color: var(--text-secondary);">${description}</small></td>
-                                    <td><span class="status-badge ${priorityClass}">${req.priority || 'medium'}</span></td>
-                                    <td>${time}</td>
-                                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-                                    <td>${actionBtn}</td>
+                                <tr style="border-bottom: 1px solid var(--border-color, #333);" title="${this.escapeHtml(req.description || '')}">
+                                    <td style="padding: 0.75rem; color: #333;">#${typePrefix}${req.id || ''}</td>
+                                    <td style="padding: 0.75rem; color: #333; font-weight: 600;">${req.room_number || 'N/A'}</td>
+                                    <td style="padding: 0.75rem; color: #333;">${this.escapeHtml(req.guest_name || 'N/A')}</td>
+                                    <td style="padding: 0.75rem; color: #333;"><strong>${typeLabel}</strong><br><small style="color: #666;">${description}</small></td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge ${priorityClass}">${req.priority || 'medium'}</span></td>
+                                    <td style="padding: 0.75rem; color: #333;">${time}</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                                    <td style="padding: 0.75rem;">${actionBtn}</td>
                                 </tr>`;
                         }).join('')}
                     </tbody>
