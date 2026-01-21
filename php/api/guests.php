@@ -35,7 +35,6 @@ if ($method === 'GET') {
                 g.room_number,
                 g.check_in_date,
                 g.check_out_date,
-                g.access_code,
                 u.id as user_id,
                 u.full_name,
                 u.email,
