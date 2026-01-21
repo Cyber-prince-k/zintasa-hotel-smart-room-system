@@ -1146,21 +1146,18 @@ class SmartRoomSystem {
                     <h2 style="font-size: 1.5rem; font-weight: 600;">Guest List</h2>
                     <p style="color: var(--text-secondary);">View and manage hotel guests</p>
                 </div>
-                <button class="btn btn-primary" id="addNewGuestBtn"><i class="fas fa-user-plus"></i><span>Add Guest</span></button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" class="form-control" id="guestSearchInput" placeholder="Search guests..." style="width: 200px;">
+                    <button class="btn btn-secondary btn-sm" id="refreshGuestsBtn"><i class="fas fa-sync-alt"></i></button>
+                    <button class="btn btn-primary" id="addNewGuestBtn"><i class="fas fa-user-plus"></i><span>Add Guest</span></button>
+                </div>
             </div>
             <div class="card">
                 <div class="card-body">
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr><th>Name</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>Prince Kamanga</td><td>205</td><td>24 Oct</td><td>28 Oct</td><td><span class="status-badge success">Active</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-                                <tr><td>John Smith</td><td>301</td><td>25 Oct</td><td>30 Oct</td><td><span class="status-badge success">Active</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-                                <tr><td>Jane Doe</td><td>118</td><td>23 Oct</td><td>27 Oct</td><td><span class="status-badge warning">Check-out Today</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-                            </tbody>
-                        </table>
+                    <div class="table-container" id="staffGuestsContainer">
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
+                            <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 0.5rem;">Loading guests...</span>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -1362,15 +1359,33 @@ class SmartRoomSystem {
             }
         }
 
-        if (section === 'guests' || section === 'add-guest') {
+        if (section === 'guests') {
+            this.loadStaffGuests();
+            
             const addNewGuestBtn = document.getElementById('addNewGuestBtn');
             if (addNewGuestBtn) {
                 addNewGuestBtn.addEventListener('click', () => this.showStaffSection('add-guest'));
             }
-
+            
+            const refreshGuestsBtn = document.getElementById('refreshGuestsBtn');
+            if (refreshGuestsBtn) {
+                refreshGuestsBtn.addEventListener('click', () => this.loadStaffGuests());
+            }
+            
+            const searchInput = document.getElementById('guestSearchInput');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => this.loadStaffGuests(searchInput.value), 300);
+                });
+            }
+        }
+        
+        if (section === 'add-guest') {
             const cancelAddGuest = document.getElementById('cancelAddGuest');
             if (cancelAddGuest) {
-                cancelAddGuest.addEventListener('click', () => this.showStaffSection('dashboard'));
+                cancelAddGuest.addEventListener('click', () => this.showStaffSection('guests'));
             }
 
             const createGuest = document.getElementById('createGuest');
@@ -3132,6 +3147,107 @@ class SmartRoomSystem {
 
     viewRequestDetails(requestId) {
         this.showToast('Request details view coming soon', 'info');
+    }
+
+    async loadStaffGuests(search = '') {
+        const container = document.getElementById('staffGuestsContainer');
+        if (!container) return;
+
+        try {
+            let url = this.getApiPath('guests.php');
+            if (search) {
+                url += `?search=${encodeURIComponent(search)}`;
+            }
+
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load guests');
+            }
+
+            const guests = data.guests || [];
+
+            if (guests.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No guests found</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-tertiary, #1a1a2e);">
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Name</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Room</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Email</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Check-in</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Check-out</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Status</th>
+                            <th style="padding: 0.75rem; text-align: left; color: var(--text-primary, #fff);">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${guests.map(guest => {
+                            const statusClass = this.getGuestStatusClass(guest.status);
+                            const statusLabel = this.getGuestStatusLabel(guest.status);
+                            const checkIn = guest.check_in_date ? new Date(guest.check_in_date).toLocaleDateString() : 'N/A';
+                            const checkOut = guest.check_out_date ? new Date(guest.check_out_date).toLocaleDateString() : 'N/A';
+                            
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border-color, #333);">
+                                    <td style="padding: 0.75rem; color: #333; font-weight: 600;">${this.escapeHtml(guest.full_name || 'N/A')}</td>
+                                    <td style="padding: 0.75rem; color: #333;">${guest.room_number || 'N/A'}</td>
+                                    <td style="padding: 0.75rem; color: #333;">${this.escapeHtml(guest.email || 'N/A')}</td>
+                                    <td style="padding: 0.75rem; color: #333;">${checkIn}</td>
+                                    <td style="padding: 0.75rem; color: #333;">${checkOut}</td>
+                                    <td style="padding: 0.75rem;"><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                                    <td style="padding: 0.75rem;">
+                                        <button class="btn btn-secondary btn-sm" onclick="window.smartRoomSystem.viewGuestDetails(${guest.id})">View</button>
+                                    </td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
+
+        } catch (err) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>${err.message || 'Failed to load guests'}</p>
+                    <button class="btn btn-primary btn-sm mt-4" onclick="window.smartRoomSystem.loadStaffGuests()">Retry</button>
+                </div>`;
+        }
+    }
+
+    getGuestStatusClass(status) {
+        const classes = {
+            'active': 'success',
+            'checkout_today': 'warning',
+            'checked_out': 'secondary',
+            'upcoming': 'info'
+        };
+        return classes[status] || 'secondary';
+    }
+
+    getGuestStatusLabel(status) {
+        const labels = {
+            'active': 'Active',
+            'checkout_today': 'Checkout Today',
+            'checked_out': 'Checked Out',
+            'upcoming': 'Upcoming'
+        };
+        return labels[status] || status;
+    }
+
+    viewGuestDetails(guestId) {
+        this.showToast('Guest details view coming soon', 'info');
     }
 
     startMessagePolling() {
