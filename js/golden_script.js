@@ -1116,22 +1116,24 @@ class SmartRoomSystem {
                     <h2 style="font-size: 1.5rem; font-weight: 600;">Service Requests</h2>
                     <p style="color: var(--text-secondary);">Manage guest service requests</p>
                 </div>
-                <button class="btn btn-primary btn-sm" id="assignAllBtn"><i class="fas fa-tasks"></i><span>Assign All</span></button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select class="form-control" id="requestStatusFilter" style="width: auto;">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" id="refreshRequestsBtn"><i class="fas fa-sync-alt"></i></button>
+                </div>
             </div>
             <div class="card">
                 <div class="card-body">
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr><th>Request ID</th><th>Room</th><th>Service</th><th>Time</th><th>Status</th><th>Action</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>#HK2105</td><td>312</td><td>Housekeeping</td><td>11:30 AM</td><td><span class="status-badge warning">Pending</span></td><td><button class="btn btn-primary btn-sm assign-btn">Assign</button></td></tr>
-                                <tr><td>#MN2104</td><td>205</td><td>Maintenance</td><td>11:15 AM</td><td><span class="status-badge info">In Progress</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
-                                <tr><td>#RS2103</td><td>118</td><td>Room Service</td><td>10:45 AM</td><td><span class="status-badge success">Completed</span></td><td><button class="btn btn-secondary btn-sm">Details</button></td></tr>
-                                <tr><td>#HK2102</td><td>409</td><td>Housekeeping</td><td>10:20 AM</td><td><span class="status-badge warning">Pending</span></td><td><button class="btn btn-primary btn-sm assign-btn">Assign</button></td></tr>
-                            </tbody>
-                        </table>
+                    <div class="table-container" id="staffRequestsContainer">
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100px;">
+                            <i class="fas fa-spinner fa-spin"></i> <span style="margin-left: 0.5rem;">Loading requests...</span>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -1347,16 +1349,16 @@ class SmartRoomSystem {
         }
 
         if (section === 'requests') {
-            document.querySelectorAll('.assign-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.assignServiceRequest(e.currentTarget.closest('tr'));
-                });
-            });
-
-            const assignAllBtn = document.getElementById('assignAllBtn');
-            if (assignAllBtn) {
-                assignAllBtn.addEventListener('click', () => this.showToast('All pending requests assigned', 'success'));
+            this.loadStaffServiceRequests();
+            
+            const statusFilter = document.getElementById('requestStatusFilter');
+            if (statusFilter) {
+                statusFilter.addEventListener('change', () => this.loadStaffServiceRequests());
+            }
+            
+            const refreshBtn = document.getElementById('refreshRequestsBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => this.loadStaffServiceRequests());
             }
         }
 
@@ -2992,6 +2994,142 @@ class SmartRoomSystem {
         } catch (err) {
             this.showToast(err.message || 'Failed to cancel request', 'error');
         }
+    }
+
+    async loadStaffServiceRequests() {
+        const container = document.getElementById('staffRequestsContainer');
+        if (!container) return;
+
+        const statusFilter = document.getElementById('requestStatusFilter')?.value || '';
+
+        try {
+            let url = this.getApiPath('service_requests.php');
+            if (statusFilter) {
+                url += `?status=${statusFilter}`;
+            }
+
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load requests');
+            }
+
+            const requests = data.requests || [];
+
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-clipboard-check" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No service requests found</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Room</th>
+                            <th>Guest</th>
+                            <th>Service</th>
+                            <th>Priority</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${requests.map(req => {
+                            const typePrefix = req.request_type.substring(0, 2).toUpperCase();
+                            const typeLabel = req.request_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const statusClass = this.getStatusBadgeClass(req.status);
+                            const statusLabel = req.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const priorityClass = this.getPriorityClass(req.priority);
+                            const time = this.formatRequestTime(req.created_at);
+                            
+                            let actionBtn = '';
+                            if (req.status === 'pending') {
+                                actionBtn = `<button class="btn btn-primary btn-sm" onclick="window.smartRoomSystem.updateRequestStatus(${req.id}, 'in_progress')">Start</button>`;
+                            } else if (req.status === 'assigned' || req.status === 'in_progress') {
+                                actionBtn = `<button class="btn btn-success btn-sm" onclick="window.smartRoomSystem.updateRequestStatus(${req.id}, 'completed')">Complete</button>`;
+                            } else {
+                                actionBtn = `<button class="btn btn-secondary btn-sm" onclick="window.smartRoomSystem.viewRequestDetails(${req.id})">View</button>`;
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td>#${typePrefix}${req.id}</td>
+                                    <td>${req.room_number}</td>
+                                    <td>${this.escapeHtml(req.guest_name || 'N/A')}</td>
+                                    <td>${typeLabel}</td>
+                                    <td><span class="status-badge ${priorityClass}">${req.priority}</span></td>
+                                    <td>${time}</td>
+                                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                                    <td>${actionBtn}</td>
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`;
+
+        } catch (err) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>${err.message || 'Failed to load requests'}</p>
+                    <button class="btn btn-primary btn-sm mt-4" onclick="window.smartRoomSystem.loadStaffServiceRequests()">Retry</button>
+                </div>`;
+        }
+    }
+
+    getStatusBadgeClass(status) {
+        const classes = {
+            'pending': 'warning',
+            'assigned': 'info',
+            'in_progress': 'info',
+            'completed': 'success',
+            'cancelled': 'danger'
+        };
+        return classes[status] || 'secondary';
+    }
+
+    getPriorityClass(priority) {
+        const classes = {
+            'low': 'secondary',
+            'medium': 'info',
+            'high': 'warning',
+            'urgent': 'danger'
+        };
+        return classes[priority] || 'secondary';
+    }
+
+    async updateRequestStatus(requestId, newStatus) {
+        try {
+            const res = await fetch(this.getApiPath('service_requests.php'), {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: requestId, status: newStatus })
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to update request');
+            }
+
+            this.showToast(`Request ${newStatus.replace('_', ' ')}`, 'success');
+            this.loadStaffServiceRequests();
+        } catch (err) {
+            this.showToast(err.message || 'Failed to update request', 'error');
+        }
+    }
+
+    viewRequestDetails(requestId) {
+        this.showToast('Request details view coming soon', 'info');
     }
 
     startMessagePolling() {
