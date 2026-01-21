@@ -957,6 +957,124 @@ class SmartRoomSystem {
         }
     }
 
+    async loadStaffDashboardStats() {
+        try {
+            // Fetch service requests
+            const reqRes = await fetch(this.getApiPath('service_requests.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const reqData = await reqRes.json();
+            const requests = reqData.ok ? (reqData.requests || []) : [];
+            
+            const pendingCount = requests.filter(r => r.status === 'pending').length;
+            const inProgressCount = requests.filter(r => r.status === 'in_progress').length;
+            const completedCount = requests.filter(r => r.status === 'completed').length;
+            
+            // Update pending requests stat
+            const pendingStat = document.getElementById('statPendingRequests');
+            if (pendingStat) pendingStat.textContent = pendingCount;
+            
+            const pendingChange = document.getElementById('statPendingChange');
+            if (pendingChange) {
+                pendingChange.innerHTML = inProgressCount > 0 
+                    ? `<i class="fas fa-spinner"></i><span>${inProgressCount} in progress</span>`
+                    : '<span>No requests in progress</span>';
+            }
+            
+            // Update total requests stat
+            const totalStat = document.getElementById('statTotalRequests');
+            if (totalStat) totalStat.textContent = requests.length;
+            
+            const completedStat = document.getElementById('statCompletedRequests');
+            if (completedStat) {
+                completedStat.innerHTML = `<i class="fas fa-check"></i><span>${completedCount} completed</span>`;
+            }
+
+            // Fetch guests
+            const guestRes = await fetch(this.getApiPath('guests.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const guestData = await guestRes.json();
+            const guests = guestData.ok ? (guestData.guests || []) : [];
+            
+            const activeGuests = guests.filter(g => g.status === 'active').length;
+            const checkoutToday = guests.filter(g => g.status === 'checkout_today').length;
+            
+            // Update guests stat
+            const guestsStat = document.getElementById('statActiveGuests');
+            if (guestsStat) guestsStat.textContent = activeGuests;
+            
+            const checkoutStat = document.getElementById('statCheckoutToday');
+            if (checkoutStat) {
+                checkoutStat.innerHTML = checkoutToday > 0 
+                    ? `<i class="fas fa-sign-out-alt"></i><span>${checkoutToday} checkout today</span>`
+                    : '<span>No checkouts today</span>';
+            }
+            
+            // Update rooms stat (based on guests with rooms)
+            const occupiedRooms = guests.filter(g => g.status === 'active' && g.room_number).length;
+            const totalRooms = 50; // Default total rooms
+            const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+            
+            const roomsStat = document.getElementById('statRoomsOccupied');
+            if (roomsStat) roomsStat.textContent = `${occupiedRooms}/${totalRooms}`;
+            
+            const occupancyStat = document.getElementById('statOccupancyRate');
+            if (occupancyStat) {
+                occupancyStat.innerHTML = `<i class="fas fa-chart-line"></i><span>${occupancyRate}% occupancy</span>`;
+            }
+            
+            // Load recent requests
+            this.loadRecentRequests(requests.slice(0, 5));
+            
+        } catch (err) {
+            console.error('Failed to load dashboard stats:', err);
+        }
+    }
+
+    loadRecentRequests(requests) {
+        const container = document.getElementById('recentRequestsContainer');
+        if (!container) return;
+        
+        if (requests.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 1rem; color: var(--text-secondary);">
+                    <p>No recent service requests</p>
+                </div>`;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="alerts-grid">
+                ${requests.map(req => {
+                    const priorityClass = req.priority === 'high' ? 'urgent' : (req.priority === 'medium' ? 'warning' : 'info');
+                    const priorityIcon = req.priority === 'high' ? 'exclamation-triangle' : (req.priority === 'medium' ? 'clock' : 'info-circle');
+                    const typeLabel = (req.request_type || 'other').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const time = this.formatRequestTime(req.created_at);
+                    
+                    return `
+                        <div class="alert-item ${priorityClass}">
+                            <div class="alert-icon"><i class="fas fa-${priorityIcon}"></i></div>
+                            <div class="alert-content">
+                                <h4>Room ${req.room_number || 'N/A'} - ${typeLabel}</h4>
+                                <p>${this.escapeHtml(req.description || 'No description')}</p>
+                                <small>Priority: ${req.priority || 'medium'} • ${time}</small>
+                            </div>
+                            <div class="alert-actions">
+                                ${req.status === 'pending' 
+                                    ? `<button class="btn btn-primary btn-sm" onclick="window.smartRoomSystem.updateRequestStatus(${req.id}, 'in_progress')">Start</button>`
+                                    : req.status === 'in_progress'
+                                        ? `<button class="btn btn-success btn-sm" onclick="window.smartRoomSystem.updateRequestStatus(${req.id}, 'completed')">Complete</button>`
+                                        : `<span class="status-badge success">Completed</span>`
+                                }
+                            </div>
+                        </div>`;
+                }).join('')}
+            </div>`;
+    }
+
     setupStaffNavigation() {
         const navLinks = {
             'dashboard-link': 'dashboard',
@@ -1009,70 +1127,44 @@ class SmartRoomSystem {
                 <div class="stat-card">
                     <div class="stat-icon danger"><i class="fas fa-clock"></i></div>
                     <div class="stat-content">
-                        <div class="stat-value">12</div>
+                        <div class="stat-value" id="statPendingRequests"><i class="fas fa-spinner fa-spin"></i></div>
                         <div class="stat-label">Pending Requests</div>
-                        <div class="stat-change negative"><i class="fas fa-arrow-up"></i><span>2 new in last hour</span></div>
+                        <div class="stat-change" id="statPendingChange"></div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon primary"><i class="fas fa-bed"></i></div>
                     <div class="stat-content">
-                        <div class="stat-value">142/160</div>
+                        <div class="stat-value" id="statRoomsOccupied"><i class="fas fa-spinner fa-spin"></i></div>
                         <div class="stat-label">Rooms Occupied</div>
-                        <div class="stat-change"><i class="fas fa-chart-line"></i><span>87% occupancy</span></div>
+                        <div class="stat-change" id="statOccupancyRate"></div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon success"><i class="fas fa-users"></i></div>
                     <div class="stat-content">
-                        <div class="stat-value">24</div>
-                        <div class="stat-label">Active Staff</div>
-                        <div class="stat-change"><i class="fas fa-user-check"></i><span>4 on break</span></div>
+                        <div class="stat-value" id="statActiveGuests"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">Active Guests</div>
+                        <div class="stat-change" id="statCheckoutToday"></div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon warning"><i class="fas fa-leaf"></i></div>
+                    <div class="stat-icon warning"><i class="fas fa-concierge-bell"></i></div>
                     <div class="stat-content">
-                        <div class="stat-value">18%</div>
-                        <div class="stat-label">Energy Saved</div>
-                        <div class="stat-change positive"><i class="fas fa-arrow-up"></i><span>vs yesterday</span></div>
+                        <div class="stat-value" id="statTotalRequests"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">Total Requests Today</div>
+                        <div class="stat-change" id="statCompletedRequests"></div>
                     </div>
                 </div>
             </div>
             <div class="card mt-6">
                 <div class="card-header">
-                    <h3 class="card-title">Guest Alerts & Notifications</h3>
-                    <button class="btn btn-warning btn-sm" id="acknowledgeAllBtn"><i class="fas fa-check-double"></i><span>Acknowledge All</span></button>
+                    <h3 class="card-title">Recent Service Requests</h3>
+                    <button class="btn btn-primary btn-sm" onclick="window.smartRoomSystem.showStaffSection('requests')"><i class="fas fa-list"></i><span>View All</span></button>
                 </div>
                 <div class="card-body">
-                    <div class="alerts-grid">
-                        <div class="alert-item urgent">
-                            <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                            <div class="alert-content">
-                                <h4>Room 312 - Emergency</h4>
-                                <p>Guest reporting water leak in bathroom</p>
-                                <small>Priority: High • 5 minutes ago</small>
-                            </div>
-                            <div class="alert-actions"><button class="btn btn-danger btn-sm">Take Action</button></div>
-                        </div>
-                        <div class="alert-item warning">
-                            <div class="alert-icon"><i class="fas fa-clock"></i></div>
-                            <div class="alert-content">
-                                <h4>Room 205 - Late Check-out</h4>
-                                <p>Guest requesting extended stay until 2 PM</p>
-                                <small>Priority: Medium • 30 minutes ago</small>
-                            </div>
-                            <div class="alert-actions"><button class="btn btn-warning btn-sm">Review</button></div>
-                        </div>
-                        <div class="alert-item info">
-                            <div class="alert-icon"><i class="fas fa-info-circle"></i></div>
-                            <div class="alert-content">
-                                <h4>Room 118 - Special Request</h4>
-                                <p>Guest requesting extra pillows and blankets</p>
-                                <small>Priority: Low • 1 hour ago</small>
-                            </div>
-                            <div class="alert-actions"><button class="btn btn-primary btn-sm">Fulfill</button></div>
-                        </div>
+                    <div id="recentRequestsContainer">
+                        <div style="text-align: center; padding: 1rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
                     </div>
                 </div>
             </div>`;
@@ -1345,10 +1437,7 @@ class SmartRoomSystem {
 
     initializeStaffSectionEvents(section) {
         if (section === 'dashboard') {
-            const acknowledgeAllBtn = document.getElementById('acknowledgeAllBtn');
-            if (acknowledgeAllBtn) {
-                acknowledgeAllBtn.addEventListener('click', () => this.showToast('All alerts acknowledged', 'success'));
-            }
+            this.loadStaffDashboardStats();
         }
 
         if (section === 'rooms') {
