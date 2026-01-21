@@ -3161,6 +3161,7 @@ class SmartRoomSystem {
 
             this.showToast(`Request ${newStatus.replace('_', ' ')}`, 'success');
             this.loadStaffServiceRequests();
+            this.updatePendingRequestsBadge();
         } catch (err) {
             this.showToast(err.message || 'Failed to update request', 'error');
         }
