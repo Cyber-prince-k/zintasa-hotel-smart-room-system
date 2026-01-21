@@ -706,41 +706,97 @@ class SmartRoomSystem {
 
     getGuestEnergyContent() {
         return `
-            <div class="page-header" style="margin-bottom: 1.5rem;">
-                <h2 style="font-size: 1.5rem; font-weight: 600;">Energy Usage</h2>
-                <p style="color: var(--text-secondary);">Monitor your room's energy consumption</p>
+            <div class="page-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">Energy Reports</h2>
+                    <p style="color: var(--text-secondary);">Monitor your room's energy consumption and savings</p>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="refreshEnergyBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
-            <div class="dashboard-grid grid-2">
+            
+            <div class="stats-grid" id="energyStatsContainer">
+                <div class="stat-card">
+                    <div class="stat-icon primary"><i class="fas fa-bolt"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="currentPower"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">Current Power</div>
+                        <div class="stat-change" id="currentPowerStatus"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success"><i class="fas fa-calendar-day"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="todayUsage"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">Today's Usage</div>
+                        <div class="stat-change" id="todayComparison"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning"><i class="fas fa-calendar-week"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="weekUsage"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">This Week</div>
+                        <div class="stat-change" id="weekAverage"></div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i class="fas fa-leaf"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="carbonSaved"><i class="fas fa-spinner fa-spin"></i></div>
+                        <div class="stat-label">Carbon Saved</div>
+                        <div class="stat-change positive" id="savingsPercent"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid grid-2" style="margin-top: 1.5rem;">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Energy Consumption</h3>
-                        <span class="text-success"><i class="fas fa-leaf"></i><span>Eco Mode Active</span></span>
+                        <h3 class="card-title">Hourly Consumption Today</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="energy-summary">
-                            <div class="energy-item">
-                                <div class="energy-label">Today's Usage</div>
-                                <div class="energy-value">14.2 kWh</div>
-                                <div class="energy-change positive"><i class="fas fa-arrow-down"></i> 45% less than average</div>
-                            </div>
-                        </div>
-                        <div class="energy-chart">
-                            <div class="chart-bar">
-                                <div class="bar" style="height: 80%"><div class="bar-label">AC</div></div>
-                                <div class="bar" style="height: 40%"><div class="bar-label">Lighting</div></div>
-                                <div class="bar" style="height: 60%"><div class="bar-label">TV</div></div>
-                                <div class="bar" style="height: 30%"><div class="bar-label">Other</div></div>
-                            </div>
-                        </div>
+                    <div class="card-body" style="height: 300px;">
+                        <canvas id="hourlyChart"></canvas>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-header"><h3 class="card-title">Eco Tips</h3></div>
+                    <div class="card-header">
+                        <h3 class="card-title">Weekly Consumption</h3>
+                    </div>
+                    <div class="card-body" style="height: 300px;">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid grid-2" style="margin-top: 1.5rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Device Breakdown</h3>
+                    </div>
+                    <div class="card-body" style="height: 300px;">
+                        <canvas id="deviceChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Energy Saving Tips</h3></div>
                     <div class="card-body">
                         <ul style="list-style: none; padding: 0;">
-                            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);"><i class="fas fa-lightbulb text-warning" style="margin-right: 0.5rem;"></i> Turn off lights when leaving the room</li>
-                            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);"><i class="fas fa-thermometer-half text-info" style="margin-right: 0.5rem;"></i> Set AC to 24°C for optimal efficiency</li>
-                            <li style="padding: 0.75rem 0;"><i class="fas fa-door-open text-success" style="margin-right: 0.5rem;"></i> Close curtains during hot afternoons</li>
+                            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center;">
+                                <i class="fas fa-lightbulb text-warning" style="margin-right: 0.75rem; font-size: 1.2rem;"></i>
+                                <span>Turn off lights when leaving the room</span>
+                            </li>
+                            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center;">
+                                <i class="fas fa-thermometer-half text-info" style="margin-right: 0.75rem; font-size: 1.2rem;"></i>
+                                <span>Set AC to 24°C for optimal efficiency</span>
+                            </li>
+                            <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center;">
+                                <i class="fas fa-tv text-secondary" style="margin-right: 0.75rem; font-size: 1.2rem;"></i>
+                                <span>Turn off TV when not watching</span>
+                            </li>
+                            <li style="padding: 0.75rem 0; display: flex; align-items: center;">
+                                <i class="fas fa-door-open text-success" style="margin-right: 0.75rem; font-size: 1.2rem;"></i>
+                                <span>Close curtains during hot afternoons</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -882,6 +938,14 @@ class SmartRoomSystem {
             const newRequestBtn = document.getElementById('newRequestBtn');
             if (newRequestBtn) {
                 newRequestBtn.addEventListener('click', () => this.showNewServiceRequestForm());
+            }
+        }
+
+        if (section === 'energy') {
+            this.loadEnergyData();
+            const refreshEnergyBtn = document.getElementById('refreshEnergyBtn');
+            if (refreshEnergyBtn) {
+                refreshEnergyBtn.addEventListener('click', () => this.loadEnergyData());
             }
         }
 
@@ -3118,6 +3182,193 @@ class SmartRoomSystem {
             this.loadServiceRequests();
         } catch (err) {
             this.showToast(err.message || 'Failed to cancel request', 'error');
+        }
+    }
+
+    async loadEnergyData() {
+        try {
+            const res = await fetch(this.getApiPath('energy.php'), {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Failed to load energy data');
+            }
+
+            // Update stats
+            const currentPower = document.getElementById('currentPower');
+            if (currentPower) currentPower.textContent = `${data.current.consumption} W`;
+
+            const currentStatus = document.getElementById('currentPowerStatus');
+            if (currentStatus) {
+                const deviceCount = data.devices.filter(d => d.state === 'on').length;
+                currentStatus.innerHTML = `<i class="fas fa-power-off"></i><span>${deviceCount} devices on</span>`;
+            }
+
+            const todayUsage = document.getElementById('todayUsage');
+            if (todayUsage) todayUsage.textContent = `${data.summary.today_kwh} kWh`;
+
+            const todayComparison = document.getElementById('todayComparison');
+            if (todayComparison) {
+                const diff = data.summary.hotel_avg_kwh - data.summary.avg_daily_kwh;
+                const isLess = diff > 0;
+                todayComparison.innerHTML = isLess 
+                    ? `<i class="fas fa-arrow-down"></i><span>${Math.abs(diff).toFixed(1)} kWh below avg</span>`
+                    : `<i class="fas fa-arrow-up"></i><span>${Math.abs(diff).toFixed(1)} kWh above avg</span>`;
+                todayComparison.className = `stat-change ${isLess ? 'positive' : 'negative'}`;
+            }
+
+            const weekUsage = document.getElementById('weekUsage');
+            if (weekUsage) weekUsage.textContent = `${data.summary.week_kwh} kWh`;
+
+            const weekAverage = document.getElementById('weekAverage');
+            if (weekAverage) weekAverage.innerHTML = `<i class="fas fa-chart-bar"></i><span>Avg: ${data.summary.avg_daily_kwh} kWh/day</span>`;
+
+            const carbonSaved = document.getElementById('carbonSaved');
+            if (carbonSaved) carbonSaved.textContent = `${data.summary.carbon_saved_kg} kg`;
+
+            const savingsPercent = document.getElementById('savingsPercent');
+            if (savingsPercent) {
+                savingsPercent.innerHTML = data.summary.savings_percent > 0
+                    ? `<i class="fas fa-leaf"></i><span>${data.summary.savings_percent}% savings</span>`
+                    : `<span>Room for improvement</span>`;
+            }
+
+            // Render charts
+            this.renderEnergyCharts(data);
+
+        } catch (err) {
+            console.error('Failed to load energy data:', err);
+            this.showToast('Failed to load energy data', 'error');
+        }
+    }
+
+    renderEnergyCharts(data) {
+        // Destroy existing charts
+        if (this.hourlyChart) this.hourlyChart.destroy();
+        if (this.weeklyChart) this.weeklyChart.destroy();
+        if (this.deviceChart) this.deviceChart.destroy();
+
+        // Hourly Chart
+        const hourlyCtx = document.getElementById('hourlyChart');
+        if (hourlyCtx) {
+            this.hourlyChart = new Chart(hourlyCtx, {
+                type: 'line',
+                data: {
+                    labels: data.hourly.map(h => h.label),
+                    datasets: [{
+                        label: 'Consumption (W)',
+                        data: data.hourly.map(h => h.consumption),
+                        borderColor: '#d4af37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#888' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#888' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Weekly Chart
+        const weeklyCtx = document.getElementById('weeklyChart');
+        if (weeklyCtx) {
+            this.weeklyChart = new Chart(weeklyCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.daily.map(d => d.day),
+                    datasets: [{
+                        label: 'Daily Usage (kWh)',
+                        data: data.daily.map(d => d.consumption),
+                        backgroundColor: [
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(212, 175, 55, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#888' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#888' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Device Breakdown Chart
+        const deviceCtx = document.getElementById('deviceChart');
+        if (deviceCtx) {
+            const activeDevices = data.devices.filter(d => d.power > 0);
+            const deviceLabels = activeDevices.length > 0 
+                ? activeDevices.map(d => d.name)
+                : ['No active devices'];
+            const deviceData = activeDevices.length > 0 
+                ? activeDevices.map(d => d.power)
+                : [1];
+
+            this.deviceChart = new Chart(deviceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: deviceLabels,
+                    datasets: [{
+                        data: deviceData,
+                        backgroundColor: [
+                            '#d4af37',
+                            '#10b981',
+                            '#3b82f6',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#888' }
+                        }
+                    }
+                }
+            });
         }
     }
 
